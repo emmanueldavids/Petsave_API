@@ -1,0 +1,32 @@
+version: '3'
+services:
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=mywebdb
+    volumes:
+      - fusionauth_db_data:/var/lib/postgresql/data
+
+  fusionauth:
+    image: fusionauth/fusionauth-app:latest
+    depends_on:
+      - db
+    ports:
+      - 9011:9011
+    environment:
+      - DATABASE_URL=jdbc:postgresql://db:5432/mywebdb
+      - DATABASE_ROOT_USER=root
+      - DATABASE_ROOT_PASSWORD=root
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=root
+      - DATABASE_NAME=mywebdb
+      - DATABASE_SCHEMA=public        # optional: isolate FusionAuth in its own schema
+      - FUSIONAUTH_APP_MEMORY=512M
+    volumes:
+      - fusionauth_config:/usr/local/fusionauth/config
+
+volumes:
+  fusionauth_db_data:
+  fusionauth_config:
