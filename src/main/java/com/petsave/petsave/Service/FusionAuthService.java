@@ -24,7 +24,7 @@ public class FusionAuthService {
         user.put("password", password);
 
         Map<String, Object> registration = new HashMap<>();
-        registration.put("applicationId", "your-app-id-here");
+        registration.put("applicationId", "7cf53ad1-ae30-4aa8-8877-8d6169029545");
 
         Map<String, Object> request = new HashMap<>();
         request.put("user", user);
