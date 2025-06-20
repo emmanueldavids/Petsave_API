@@ -1,32 +1,71 @@
-version: '3'
+# version: '3.8'
+
+# services:
+#   db:
+#     image: postgres:15
+#     container_name: fusionauth-db
+#     environment:
+#       POSTGRES_USER: fusionauth
+#       POSTGRES_PASSWORD: fusionauth
+#       POSTGRES_DB: fusionauth
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - db_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U fusionauth"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 10
+
+#   fusionauth:
+#     image: fusionauth/fusionauth-app:latest
+#     container_name: fusionauth
+#     ports:
+#       - "9011:9011"
+#     environment:
+#       database.url: jdbc:postgresql://db:5432/fusionauth
+#       database.username: fusionauth
+#       database.password: fusionauth
+#       database.root.username: fusionauth
+#       database.root.password: fusionauth
+#       database.name: fusionauth
+#       fusionauth-app.memory: 512M
+#       search.type: database
+#     depends_on:
+#       db:
+#         condition: service_healthy
+
+# volumes:
+#   db_data:
+
+
+version: '3.8'
 services:
   db:
-    image: postgres:16
+    image: postgres:15
     environment:
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=root
-      - POSTGRES_DB=mywebdb
-    volumes:
-      - fusionauth_db_data:/var/lib/postgresql/data
+      POSTGRES_USER: fusionauth
+      POSTGRES_PASSWORD: fusionauth
+      POSTGRES_DB: fusionauth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fusionauth"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   fusionauth:
     image: fusionauth/fusionauth-app:latest
-    depends_on:
-      - db
-    ports:
-      - 9011:9011
     environment:
-      - DATABASE_URL=jdbc:postgresql://db:5432/mywebdb
-      - DATABASE_ROOT_USER=root
-      - DATABASE_ROOT_PASSWORD=root
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=root
-      - DATABASE_NAME=mywebdb
-      - DATABASE_SCHEMA=public        # optional: isolate FusionAuth in its own schema
-      - FUSIONAUTH_APP_MEMORY=512M
-    volumes:
-      - fusionauth_config:/usr/local/fusionauth/config
+      database.url: jdbc:postgresql://db:5432/fusionauth
+      database.username: fusionauth
+      database.password: fusionauth
+      database.root.username: fusionauth
+      database.root.password: fusionauth
+      search.type: database
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "9011:9011"
 
-volumes:
-  fusionauth_db_data:
-  fusionauth_config:
