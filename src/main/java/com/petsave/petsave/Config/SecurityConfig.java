@@ -25,7 +25,9 @@ public class SecurityConfig {
         "/",
         "/login**",
         "/loginSuccess",  // Add this
-        "/oauth2/**"
+        "/oauth2/**",
+        "/api/donations/**",
+        "/api/users/**",
     };
 
     @Bean
