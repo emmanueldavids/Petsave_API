@@ -24,8 +24,11 @@ public class SecurityConfig {
         "/swagger-ui.html",
         "/",
         "/login**",
-        "/loginSuccess",  // Add this
-        "/oauth2/**"
+        "/loginSuccess",  
+        "/oauth2/**",
+        "/api/blogs/**",
+        "/api/donations/**",
+
     };
 
     @Bean
