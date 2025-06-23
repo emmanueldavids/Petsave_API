@@ -1,35 +1,32 @@
 package com.petsave.petsave.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-
 import com.petsave.petsave.Entity.Blog;
 import com.petsave.petsave.Repository.BlogRepository;
 import com.petsave.petsave.dto.BlogRequest;
 import com.petsave.petsave.dto.BlogResponse;
 
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class BlogService {
 
     private final BlogRepository blogRepository;
+    private final String uploadDir = "uploads/blog-images/";
 
     public BlogService(BlogRepository blogRepository) {
         this.blogRepository = blogRepository;
     }
 
-    // Implement service methods here   
     public List<BlogResponse> getAllBlogs() {
         return blogRepository.findAll().stream()
-            .map(blog -> {
-                BlogResponse response = new BlogResponse();
-                response.setId(blog.getId());
-                response.setTitle(blog.getTitle());
-                response.setContent(blog.getContent());
-                response.setAuthor(blog.getAuthor());
-                return response;
-            })
+            .map(this::mapToResponse)
             .collect(Collectors.toList());
     }
 
@@ -38,43 +35,40 @@ public class BlogService {
         blog.setTitle(blogRequest.getTitle());
         blog.setContent(blogRequest.getContent());
         blog.setAuthor(blogRequest.getAuthor());
+
+        MultipartFile image = blogRequest.getImage();
+        if (image != null && !image.isEmpty()) {
+            String imagePath = saveImage(image);
+            blog.setImageUrl(imagePath);
+        }
+
         blog = blogRepository.save(blog);
-        BlogResponse response = new BlogResponse();
-        response.setId(blog.getId());
-        response.setTitle(blog.getTitle());
-        response.setContent(blog.getContent());
-        response.setAuthor(blog.getAuthor());
-        return response;
+        return mapToResponse(blog);
     }
 
     public BlogResponse getBlogById(Long id) {
-        return blogRepository.findById(id).map(blog -> {
-            BlogResponse response = new BlogResponse();
-            response.setId(blog.getId());
-            response.setTitle(blog.getTitle());
-            response.setContent(blog.getContent());
-            response.setAuthor(blog.getAuthor());
-            return response;
-        }).orElse(null);
+        return blogRepository.findById(id)
+            .map(this::mapToResponse)
+            .orElse(null);
     }
 
     public BlogResponse updateBlog(Long id, BlogRequest blogRequest) {
-        if (blogRepository.existsById(id)) {
-            Blog blog = new Blog();
-            blog.setId(id);
-            blog.setTitle(blogRequest.getTitle());
-            blog.setContent(blogRequest.getContent());
-            blog.setAuthor(blogRequest.getAuthor());
-            blog = blogRepository.save(blog);
-            BlogResponse response = new BlogResponse();
-            response.setId(blog.getId());
-            response.setTitle(blog.getTitle());
-            response.setContent(blog.getContent());
-            response.setAuthor(blog.getAuthor());
-            return response;
-        }
-        return null; // or throw an exception
+        return blogRepository.findById(id).map(existing -> {
+            existing.setTitle(blogRequest.getTitle());
+            existing.setContent(blogRequest.getContent());
+            existing.setAuthor(blogRequest.getAuthor());
+
+            MultipartFile image = blogRequest.getImage();
+            if (image != null && !image.isEmpty()) {
+                String imagePath = saveImage(image);
+                existing.setImageUrl(imagePath);
+            }
+
+            Blog updatedBlog = blogRepository.save(existing);
+            return mapToResponse(updatedBlog);
+        }).orElse(null);
     }
+
     public boolean deleteBlog(Long id) throws Exception {
         if (blogRepository.existsById(id)) {
             blogRepository.deleteById(id);
@@ -83,5 +77,26 @@ public class BlogService {
             throw new Exception("Blog not found with id: " + id);
         }
     }
-    // Add more methods as needed for your application
+
+    private String saveImage(MultipartFile image) {
+        try {
+            Files.createDirectories(Paths.get(uploadDir));
+            String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
+            Path filePath = Paths.get(uploadDir, fileName);
+            Files.write(filePath, image.getBytes());
+            return "/uploads/blog-images/" + fileName; // returned as public URL path
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to save image", e);
+        }
+    }
+
+    private BlogResponse mapToResponse(Blog blog) {
+        BlogResponse response = new BlogResponse();
+        response.setId(blog.getId());
+        response.setTitle(blog.getTitle());
+        response.setContent(blog.getContent());
+        response.setAuthor(blog.getAuthor());
+        response.setImageUrl(blog.getImageUrl());
+        return response;
+    }
 }

@@ -17,6 +17,9 @@ public class Blog {
     private String author;
 
     private String imageType;
+    
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @Lob
     @Column(length = 1000000) // For large images
@@ -91,4 +94,10 @@ public class Blog {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-}   
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+}

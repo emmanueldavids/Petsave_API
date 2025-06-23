@@ -5,6 +5,8 @@ public class BlogResponse {
     private String title;
     private String content;
     private String author;
+    private String imageUrl;
+
 
     // Getters and setters
     public Long getId() {
@@ -38,4 +40,11 @@ public class BlogResponse {
     public void setAuthor(String author) {
         this.author = author;
     }
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+    
 }
