@@ -100,4 +100,16 @@ public class Blog {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
+    @Override
+    public String toString() {
+        return "Blog{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", content='" + content + '\'' +
+                ", author='" + author + '\'' +
+                ", imageType='" + imageType + '\'' +
+                ", imageUrl='" + imageUrl + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
+    }
 }
