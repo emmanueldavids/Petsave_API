@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+com.petsave.petsave.Config.DotenvApplicationInitializer
