@@ -39,10 +39,10 @@ public class DonationController {
     }
 
 
-    @PostMapping
-    public DonationResponse createDonation(@RequestBody DonationRequest donationRequest) {
-        return donationService.createDonation(donationRequest);
-    }
+    // @PostMapping
+    // public DonationResponse createDonation(@RequestBody DonationRequest donationRequest) {
+    //     return donationService.createDonation(donationRequest);
+    // }
 
     @GetMapping("/{id}")
     public DonationResponse getDonationById(@PathVariable Long id) {
@@ -82,7 +82,7 @@ public class DonationController {
     //     return donationService.getAverageDonation();
     // }
 
-    @PostMapping("/pay")
+    @PostMapping
     public ResponseEntity<Map<String, String>> pay(@RequestBody DonationRequest donationRequest) {
         String redirectUrl = paymentService.initializePayment(donationRequest);
         return ResponseEntity.ok(Map.of("redirectUrl", redirectUrl));
