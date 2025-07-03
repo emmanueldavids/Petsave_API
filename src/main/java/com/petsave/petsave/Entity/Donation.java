@@ -11,7 +11,7 @@ public class Donation {
     
     private Long id;
     private String donorName;
-    private Double amount;
+    private Float amount;
     private LocalDateTime date;
     private Gender gender;
     private String country;
@@ -26,7 +26,7 @@ public class Donation {
     public Donation(
         Long id, 
         String donorName, 
-        Double amount, 
+        Float amount, 
         LocalDateTime date, 
         Gender gender, 
         String country, 
@@ -59,11 +59,11 @@ public class Donation {
         this.donorName = donorName;
     }
 
-    public Double getAmount() {
+    public Float getAmount() {
         return amount;
     }
 
-    public void setAmount(Double amount) {
+    public void setAmount(Float amount) {
         this.amount = amount;
     }
 

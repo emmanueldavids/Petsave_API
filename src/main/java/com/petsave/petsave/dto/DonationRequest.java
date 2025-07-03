@@ -6,14 +6,14 @@ import com.petsave.petsave.Entity.Gender;
 
 public class DonationRequest {
     private String donorName;
-    private Double amount;
+    private Float amount;
     private LocalDateTime date;
     private Gender gender;
     private String country;
     private String email;
     private String reference;
 
-    public DonationRequest(String donorName, Double amount, LocalDateTime date, Gender gender, String country, String email, String reference) {
+    public DonationRequest(String donorName, Float amount, LocalDateTime date, Gender gender, String country, String email, String reference) {
         this.donorName = donorName;
         this.amount = amount;
         this.date = date;
@@ -31,11 +31,11 @@ public class DonationRequest {
         this.donorName = donorName;
     }
 
-    public Double getAmount() {
+    public Float getAmount() {
         return amount;
     }
 
-    public void setAmount(Double amount) {
+    public void setAmount(Float amount) {
         this.amount = amount;
     }
 
