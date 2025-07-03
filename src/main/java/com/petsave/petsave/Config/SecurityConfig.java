@@ -1,25 +1,60 @@
 package com.petsave.petsave.Config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.*;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtFilter jwtFilter;
+    private final UserDetailsService userDetailsService;
+
+    @Bean
+    public AuthenticationManager authenticationManager() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return new ProviderManager(provider);
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable() // Disable CSRF protection for simplicity
-            .authorizeRequests()
-                .requestMatchers("/api/donations/**").permitAll() // Allow all requests to donation endpoints
-                .anyRequest().authenticated() // Other requests require authentication
-            .and()
-            .httpBasic(); // Use basic authentication
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/",
+                    "/login**",
+                    "/loginSuccess",  
+                    "/oauth2/**",
+                    "/api/blogs/**",
+                    "/api/donations/**",
+                    "/error"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
-    
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }

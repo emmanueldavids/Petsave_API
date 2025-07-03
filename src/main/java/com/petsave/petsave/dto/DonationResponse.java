@@ -7,12 +7,12 @@ import com.petsave.petsave.Entity.Gender;
 public class DonationResponse {
     private Long id;
     private String donorName;
-    private Double amount;
+    private Float amount;
     private LocalDateTime date;
     private Gender gender;
     private String country;
 
-    public DonationResponse(Long id, String donorName, Double amount, LocalDateTime date, Gender gender, String country) {
+    public DonationResponse(Long id, String donorName, Float amount, LocalDateTime date, Gender gender, String country) {
         this.id = id;
         this.donorName = donorName;
         this.amount = amount;
@@ -32,10 +32,10 @@ public class DonationResponse {
     public void setDonorName(String donorName) {
         this.donorName = donorName;
     }
-    public Double getAmount() {
+    public Float getAmount() {
         return amount;
     }
-    public void setAmount(Double amount) {
+    public void setAmount(Float amount) {
         this.amount = amount;
     }
     public LocalDateTime getDate() {
@@ -72,7 +72,7 @@ public class DonationResponse {
     public DonationResponse() {
         // Default constructor
     }
-    public DonationResponse(String donorName, Double amount, LocalDateTime date, Gender gender, String country) {
+    public DonationResponse(String donorName, Float amount, LocalDateTime date, Gender gender, String country) {
         this.donorName = donorName;
         this.amount = amount;
         this.date = date;
