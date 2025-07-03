@@ -3,6 +3,7 @@ package com.petsave.petsave.dto;
 import java.time.LocalDateTime;
 
 import com.petsave.petsave.Entity.Gender;
+import com.petsave.petsave.Entity.PaymentStatus;
 
 public class DonationResponse {
     private Long id;
@@ -11,14 +12,17 @@ public class DonationResponse {
     private LocalDateTime date;
     private Gender gender;
     private String country;
+    private PaymentStatus paymentStatus;
 
-    public DonationResponse(Long id, String donorName, Float amount, LocalDateTime date, Gender gender, String country) {
+
+    public DonationResponse(Long id, String donorName, Float amount, LocalDateTime date, Gender gender, String country, PaymentStatus paymentStatus) {
         this.id = id;
         this.donorName = donorName;
         this.amount = amount;
         this.date = date;
         this.gender = gender;
         this.country = country;
+        this.paymentStatus = paymentStatus;
     }
     public Long getId() {
         return id;
@@ -56,6 +60,12 @@ public class DonationResponse {
     public void setCountry(String country) {
         this.country = country;
     }
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
 
     @Override
     public String toString() {
@@ -65,6 +75,7 @@ public class DonationResponse {
                 ", amount=" + amount +
                 ", date=" + date +
                 ", gender=" + gender +
+                " paymentStatus=" + paymentStatus +
                 ", country='" + country + '\'' +
                 '}';
     }
@@ -72,12 +83,13 @@ public class DonationResponse {
     public DonationResponse() {
         // Default constructor
     }
-    public DonationResponse(String donorName, Float amount, LocalDateTime date, Gender gender, String country) {
+    public DonationResponse(String donorName, Float amount, LocalDateTime date, Gender gender, String country, PaymentStatus paymentStatus) {
         this.donorName = donorName;
         this.amount = amount;
         this.date = date;
         this.gender = gender;
         this.country = country;
+        this.paymentStatus = PaymentStatus.PENDING; // Default status
     }
 
 }
