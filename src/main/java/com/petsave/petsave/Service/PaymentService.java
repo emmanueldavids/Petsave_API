@@ -7,6 +7,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 // import org.springframework.web.reactive.function.client.WebClient;
 
+import com.petsave.petsave.Entity.Donation;
+import com.petsave.petsave.Entity.PaymentStatus;
+import com.petsave.petsave.Repository.DonationRepository;
 import com.petsave.petsave.dto.DonationRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,11 +28,28 @@ public class PaymentService {
     private String INIT_URL = "https://api.paystack.co/transaction/initialize";
     private WebClient webClient = WebClient.create();
 
+    private DonationRepository donationRepository;
+
     public String initializePayment(DonationRequest donationRequest) {
+        String reference = UUID.randomUUID().toString();
+
+        Donation donation = new Donation();
+        donation.setDonorName(donationRequest.getDonorName());
+        donation.setEmail(donationRequest.getEmail());
+        donation.setAmount(donationRequest.getAmount());
+        donation.setGender(donationRequest.getGender());
+        donation.setCountry(donationRequest.getCountry());
+        donation.setDate(java.time.LocalDateTime.now());
+        donation.setPaymentStatus(PaymentStatus.PENDING);
+        donation.setReference(reference);
+
+        donationRepository.save(donation);
+
         Map<String, Object> payload = new HashMap<>();
-        payload.put("email", donationRequest.getEmail());
-        payload.put("amount", (int)(donationRequest.getAmount() * 100)); // Paystack expects amount in kobo
-        payload.put("reference", UUID.randomUUID().toString());
+        payload.put("email", donation.getEmail());
+        payload.put("amount", (int) (donation.getAmount() * 100));
+        payload.put("reference", reference);
+        payload.put("callback_url", "https://yourfrontend.com/payment/callback?ref=" + reference); // ✅ Your frontend page
 
         return webClient.post()
             .uri(INIT_URL)
@@ -38,7 +58,8 @@ public class PaymentService {
             .bodyValue(payload)
             .retrieve()
             .bodyToMono(Map.class)
-            .map(response -> (String)((Map<String, Object>)response.get("data")).get("authorization_url"))
-            .block(); // get the redirect URL to send to frontend
+            .map(response -> (String) ((Map<String, Object>) response.get("data")).get("authorization_url"))
+            .block();
     }
+
 }

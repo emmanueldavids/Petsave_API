@@ -1,18 +1,16 @@
 package com.petsave.petsave.Config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.client.RestTemplate;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -23,26 +21,22 @@ public class SecurityConfig {
         "/swagger-ui/**",
         "/swagger-ui.html",
         "/",
-        "/login**",
-        "/loginSuccess",  
-        "/oauth2/**",
         "/api/blogs/**",
         "/api/donations/**",
-
+        "/api/paystack/**"
     };
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth -> oauth
-                .defaultSuccessUrl("/loginSuccess", true)
-            )
-            .httpBasic(Customizer.withDefaults());
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class) // 🔥 Add this line
+            .formLogin(form -> form.disable())
+            .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();
     }
@@ -66,5 +60,4 @@ public class SecurityConfig {
     public ObjectMapper objectMapper() {
         return new ObjectMapper();
     }
-
 }
