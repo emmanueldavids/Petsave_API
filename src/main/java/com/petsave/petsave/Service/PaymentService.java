@@ -22,13 +22,16 @@ public class PaymentService {
 
     @Value("${paystack.secret.key}")
     private String PAYSTACK_SECRET;
-    @Value("${paystack.secret.key}")
-    private String paystackSecret;
 
-    private String INIT_URL = "https://api.paystack.co/transaction/initialize";
-    private WebClient webClient = WebClient.create();
+    private final DonationRepository donationRepository;
+    private final WebClient webClient;
 
-    private DonationRepository donationRepository;
+    private static final String INIT_URL = "https://api.paystack.co/transaction/initialize";
+
+    public PaymentService(DonationRepository donationRepository) {
+        this.donationRepository = donationRepository;
+        this.webClient = WebClient.create(); // you can also inject this if preferred
+    }
 
     public String initializePayment(DonationRequest donationRequest) {
         String reference = UUID.randomUUID().toString();
@@ -43,13 +46,13 @@ public class PaymentService {
         donation.setPaymentStatus(PaymentStatus.PENDING);
         donation.setReference(reference);
 
-        donationRepository.save(donation);
+        donationRepository.save(donation); // ✅ Now works because it's injected
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("email", donation.getEmail());
         payload.put("amount", (int) (donation.getAmount() * 100));
         payload.put("reference", reference);
-        payload.put("callback_url", "https://yourfrontend.com/payment/callback?ref=" + reference); // ✅ Your frontend page
+        payload.put("callback_url", "https://yourfrontend.com/payment/callback?ref=" + reference);
 
         return webClient.post()
             .uri(INIT_URL)
@@ -61,5 +64,4 @@ public class PaymentService {
             .map(response -> (String) ((Map<String, Object>) response.get("data")).get("authorization_url"))
             .block();
     }
-
 }
