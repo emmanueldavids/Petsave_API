@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import com.petsave.petsave.Entity.Donation;
 import com.petsave.petsave.Entity.PaymentStatus;
+import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.DonationRepository;
+import com.petsave.petsave.Repository.UserRepository;
 import com.petsave.petsave.dto.DonationRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,15 +27,17 @@ public class PaymentService {
 
     private final DonationRepository donationRepository;
     private final WebClient webClient;
+    private final UserRepository userRepository;
 
     private static final String INIT_URL = "https://api.paystack.co/transaction/initialize";
 
-    public PaymentService(DonationRepository donationRepository) {
+    public PaymentService(DonationRepository donationRepository, UserRepository userRepository) {
         this.donationRepository = donationRepository;
         this.webClient = WebClient.create(); // you can also inject this if preferred
+        this.userRepository = userRepository;
     }
 
-    public String initializePayment(DonationRequest donationRequest) {
+    public String initializePayments(DonationRequest donationRequest) {
         String reference = UUID.randomUUID().toString();
 
         Donation donation = new Donation();

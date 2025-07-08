@@ -1,16 +1,21 @@
 package com.petsave.petsave.Controller;
 
+import com.petsave.petsave.Entity.Donation;
+import com.petsave.petsave.Repository.DonationRepository;
 import com.petsave.petsave.Service.DonationService;
 import com.petsave.petsave.Service.PaymentService;
 import com.petsave.petsave.Utils.JwtUtil;
 import com.petsave.petsave.dto.DonationRequest;
 import com.petsave.petsave.dto.DonationResponse;
 
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import org.springframework.data.domain.*;
+import org.springframework.security.core.Authentication;
 
 
 
@@ -24,6 +29,11 @@ public class DonationController {
     private DonationService donationService;
     @Autowired
     private PaymentService paymentService;
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private DonationRepository donationRepository;
 
 
 
@@ -83,49 +93,20 @@ public class DonationController {
     // }
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> pay(@RequestBody DonationRequest donationRequest) {
-        String redirectUrl = paymentService.initializePayment(donationRequest);
+    public ResponseEntity<Map<String, String>> pay(
+        @RequestBody DonationRequest donationRequest,
+        Authentication auth // ✅ Injected here
+    ) {
+        String redirectUrl = donationService.initializePayment(donationRequest, auth);
         return ResponseEntity.ok(Map.of("redirectUrl", redirectUrl));
     }
 
+
+    @GetMapping("/user")
+    public List<DonationResponse> getUserDonations() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = auth.getName(); // should be email
+        return donationService.getDonationsByCurrentUser(userEmail);
+    }
    
 }
-    // @GetMapping("/status/{id}")
-    // public ResponseEntity<Map<String, String>> getPaymentStatus(@PathVariable Long id) {
-    //     String status = paymentService.getPaymentStatus(id);
-    //     return ResponseEntity.ok(Map.of("status", status));
-    // }
-    // @GetMapping("/donor/{donorName}")
-    // public Page<DonationResponse> getDonationsByDonorName(
-    //     @PathVariable String donorName,
-    //     @RequestParam(defaultValue = "0") int page,
-    //     @RequestParam(defaultValue = "10") int size
-    // ) {
-    //     Sort sort = Sort.by(Sort.Order.desc("date"), Sort.Order.asc("amount"), Sort.Order.asc("donorName"));
-    //     Pageable pageable = PageRequest.of(page, size, sort);
-    //     return donationService.getAllDonations(donorName, pageable);
-    // }
-    // @GetMapping("/donor/{donorName}/count")
-    // public Long getDonationCountByDonorName(@PathVariable String donorName) {
-    //     return donationService.getDonationCountByDonorName(donorName);
-    // }
-    // @GetMapping("/donor/{donorName}/total")
-    // public Double getTotalDonationsByDonorName(@PathVariable String donorName) {
-    //     return donationService.getTotalDonationsByDonorName(donorName);
-    // }
-    // @GetMapping("/donor/{donorName}/average")
-    // public Double getAverageDonationByDonorName(@PathVariable String donorName) {
-    //     return donationService.getAverageDonationByDonorName(donorName);
-    // }
-    // @GetMapping("/donor/{donorName}/latest")
-    // public DonationResponse getLatestDonationByDonorName(@PathVariable String donorName) {
-    //     return donationService.getLatestDonationByDonorName(donorName);
-    // }   
-    // @GetMapping("/donor/{donorName}/earliest")
-    // public DonationResponse getEarliestDonationByDonorName(@PathVariable String donorName) {
-    //     return donationService.getEarliestDonationByDonorName(donorName);
-    // }
-    // @GetMapping("/donor/{donorName}/count")
-    // public Long getDonationCountByDonorName(@PathVariable String donorName) {
-    //     return donationService.getDonationCountByDonorName(donorName);
-    // }   
