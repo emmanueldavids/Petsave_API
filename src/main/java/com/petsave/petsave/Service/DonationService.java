@@ -145,30 +145,23 @@ public class DonationService {
         donation.setReference(reference);
         donation.setPaymentStatus(PaymentStatus.PENDING);
 
-        // ✅ Assign authenticated user
+        // ✅ Get authenticated user
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            String email = auth.getName();
-            Optional<User> optionalUser = userRepository.findByEmail(email);
-            if (optionalUser.isPresent()) {
-                donation.setUser(optionalUser.get()); // 🔥 This links the donation
-                donation.setEmail(optionalUser.get().getEmail()); // override with verified email
-            } else {
-                System.out.println("❌ Authenticated user not found in DB: " + email);
-            }
+            User user = (User) auth.getPrincipal(); // ✅ Safe to cast now
+            donation.setUser(user);
+            donation.setEmail(user.getEmail());
         } else {
             System.out.println("❌ User is not authenticated!");
         }
 
         donationRepository.save(donation);
 
-        // Build payload
         Map<String, Object> payload = new HashMap<>();
         payload.put("email", donation.getEmail());
         payload.put("amount", (int)(donation.getAmount() * 100));
         payload.put("reference", reference);
         payload.put("callback_url", "https://yourapp.com/payment/callback?ref=" + reference);
 
-        // Call Paystack
         return webClient.post()
                 .uri(INIT_URL)
                 .header("Authorization", "Bearer " + PAYSTACK_SECRET)
@@ -179,6 +172,7 @@ public class DonationService {
                 .map(response -> (String) ((Map<String, Object>) response.get("data")).get("authorization_url"))
                 .block();
     }
+
 
 
     public List<DonationResponse> getDonationsByCurrentUser(String email) {
