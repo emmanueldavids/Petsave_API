@@ -23,6 +23,10 @@ public class Donation {
     private String reference; // Paystack transaction reference
 
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     public Donation(
         Long id, 
         String donorName, 
@@ -31,6 +35,7 @@ public class Donation {
         Gender gender, 
         String country, 
         String email, 
+        User user,
         String reference)
         {
             this.id = id;
@@ -41,7 +46,7 @@ public class Donation {
             this.country = country;
             this.email = email;
             this.reference = reference;
-        }
+            this.user = user;      }
 
     public Long getId() {
         return id;
@@ -80,6 +85,12 @@ public class Donation {
     public void setGender(Gender gender) {
         this.gender = gender;
     }
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user) {
+        this.user = user;
+    }
     @Override
     public String toString() {
         return "Donation{" +
@@ -91,6 +102,7 @@ public class Donation {
                 ", country='" + country + '\'' +
                 ", email='" + email + '\'' +
                 ", reference='" + reference + '\'' +
+                ". user='" + (user != null ? user.getName() : "null") + '\'' +
                 '}';
     }
     @Override

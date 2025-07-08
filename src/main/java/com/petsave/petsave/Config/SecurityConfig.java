@@ -44,6 +44,7 @@ public class SecurityConfig {
                     "/oauth2/**",
                     "/api/blogs/**",
                     "/api/donations/**",
+                    "/api/contact",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
