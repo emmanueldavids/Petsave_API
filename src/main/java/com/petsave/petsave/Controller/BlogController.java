@@ -6,8 +6,6 @@ import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.petsave.petsave.Service.BlogService;
 import com.petsave.petsave.dto.BlogRequest;
 import com.petsave.petsave.dto.BlogResponse;
