@@ -1,8 +1,11 @@
+
 package com.petsave.petsave.Service;
 
 import com.petsave.petsave.Entity.Donation;
 import com.petsave.petsave.Entity.PaymentStatus;
+import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.DonationRepository;
+import com.petsave.petsave.Repository.UserRepository;
 import com.petsave.petsave.dto.DonationRequest;
 import com.petsave.petsave.dto.DonationResponse;
 
@@ -10,9 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -22,12 +31,15 @@ public class DonationService {
     private String PAYSTACK_SECRET;
     
     private String INIT_URL = "https://api.paystack.co/transaction/initialize";
-    private WebClient webClient = WebClient.create();
+    private WebClient webClient;
 
     private final DonationRepository donationRepository;
+    private final UserRepository userRepository;
 
-    public DonationService(DonationRepository donationRepository) {
+    public DonationService(DonationRepository donationRepository, UserRepository userRepository, WebClient.Builder webClientBuilder) {
         this.donationRepository = donationRepository;
+        this.userRepository = userRepository;
+        this.webClient = webClientBuilder.build();
     }
 
     public Page<DonationResponse> getAllDonations(String donorName, Pageable pageable) {
@@ -98,17 +110,30 @@ public class DonationService {
         DonationResponse response = new DonationResponse();
         response.setId(donation.getId());
         response.setDonorName(donation.getDonorName());
+        response.setEmail(donation.getEmail());
         response.setAmount(donation.getAmount());
         response.setDate(donation.getDate());
         response.setGender(donation.getGender());
         response.setCountry(donation.getCountry());
         response.setPaymentStatus(donation.getPaymentStatus());
+        response.setReference(donation.getReference());
+
+        // ✅ Include user if not null
+        if (donation.getUser() != null) {
+            var user = donation.getUser();
+            var userDto = new DonationResponse.UserDto();
+            userDto.setId(user.getId());
+            userDto.setName(user.getName());
+            userDto.setEmail(user.getEmail());
+            response.setUser(userDto);
+        }
 
         return response;
     }
 
 
-    public String initializePayment(DonationRequest donationRequest) {
+
+    public String initializePayment(DonationRequest donationRequest, Authentication auth) {
         String reference = UUID.randomUUID().toString();
 
         Donation donation = new Donation();
@@ -117,28 +142,48 @@ public class DonationService {
         donation.setAmount(donationRequest.getAmount());
         donation.setGender(donationRequest.getGender());
         donation.setCountry(donationRequest.getCountry());
-        donation.setDate(java.time.LocalDateTime.now());
-        donation.setPaymentStatus(PaymentStatus.PENDING);
+        donation.setDate(LocalDateTime.now());
         donation.setReference(reference);
-        
+        donation.setPaymentStatus(PaymentStatus.PENDING);
+
+        // ✅ Get authenticated user
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            User user = (User) auth.getPrincipal(); // ✅ Safe to cast now
+            donation.setUser(user);
+            donation.setEmail(user.getEmail());
+        } else {
+            System.out.println("❌ User is not authenticated!");
+        }
 
         donationRepository.save(donation);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("email", donation.getEmail());
-        payload.put("amount", (int) (donation.getAmount() * 100));
+        payload.put("amount", (int)(donation.getAmount() * 100));
         payload.put("reference", reference);
+        payload.put("callback_url", "https://yourapp.com/payment/callback?ref=" + reference);
 
         return webClient.post()
-            .uri(INIT_URL)
-            .header("Authorization", "Bearer " + PAYSTACK_SECRET)
-            .header("Content-Type", "application/json")
-            .bodyValue(payload)
-            .retrieve()
-            .bodyToMono(Map.class)
-            .map(response -> (String) ((Map<String, Object>) response.get("data")).get("authorization_url"))
-            .block();
+                .uri(INIT_URL)
+                .header("Authorization", "Bearer " + PAYSTACK_SECRET)
+                .header("Content-Type", "application/json")
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .map(response -> (String) ((Map<String, Object>) response.get("data")).get("authorization_url"))
+                .block();
     }
+
+
+
+    public List<DonationResponse> getDonationsByCurrentUser(String email) {
+        List<Donation> donations = donationRepository.findByUserEmail(email);
+        return donations.stream()
+            .map(this::mapToResponse)
+            .toList();
+    }
+
+
 
 
 }

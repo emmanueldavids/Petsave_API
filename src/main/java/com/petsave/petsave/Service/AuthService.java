@@ -21,6 +21,8 @@ import com.petsave.petsave.dto.VerifyRequest;
 
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,8 @@ public class AuthService {
     private final BCryptPasswordEncoder encoder;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+
+    private final UserRepository userRepository;
 
 
     public AuthResponse register(RegisterRequest request) {
@@ -165,6 +169,14 @@ public class AuthService {
         userRepo.save(user);
 
         return new AuthResponse("Password reset successful.");
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
     }
 
 

@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import com.petsave.petsave.Entity.Donation;
 import com.petsave.petsave.Entity.PaymentStatus;
+import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.DonationRepository;
+import com.petsave.petsave.Repository.UserRepository;
 import com.petsave.petsave.dto.DonationRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -22,15 +24,20 @@ public class PaymentService {
 
     @Value("${paystack.secret.key}")
     private String PAYSTACK_SECRET;
-    @Value("${paystack.secret.key}")
-    private String paystackSecret;
 
-    private String INIT_URL = "https://api.paystack.co/transaction/initialize";
-    private WebClient webClient = WebClient.create();
+    private final DonationRepository donationRepository;
+    private final WebClient webClient;
+    private final UserRepository userRepository;
 
-    private DonationRepository donationRepository;
+    private static final String INIT_URL = "https://api.paystack.co/transaction/initialize";
 
-    public String initializePayment(DonationRequest donationRequest) {
+    public PaymentService(DonationRepository donationRepository, UserRepository userRepository) {
+        this.donationRepository = donationRepository;
+        this.webClient = WebClient.create(); // you can also inject this if preferred
+        this.userRepository = userRepository;
+    }
+
+    public String initializePayments(DonationRequest donationRequest) {
         String reference = UUID.randomUUID().toString();
 
         Donation donation = new Donation();
@@ -43,13 +50,13 @@ public class PaymentService {
         donation.setPaymentStatus(PaymentStatus.PENDING);
         donation.setReference(reference);
 
-        donationRepository.save(donation);
+        donationRepository.save(donation); // ✅ Now works because it's injected
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("email", donation.getEmail());
         payload.put("amount", (int) (donation.getAmount() * 100));
         payload.put("reference", reference);
-        payload.put("callback_url", "https://yourfrontend.com/payment/callback?ref=" + reference); // ✅ Your frontend page
+        payload.put("callback_url", "https://yourfrontend.com/payment/callback?ref=" + reference);
 
         return webClient.post()
             .uri(INIT_URL)
@@ -61,5 +68,4 @@ public class PaymentService {
             .map(response -> (String) ((Map<String, Object>) response.get("data")).get("authorization_url"))
             .block();
     }
-
 }
