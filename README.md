@@ -101,14 +101,6 @@ spring.mail.password=yourpassword
 mvn spring-boot:run
 ```
 
----
-
-## 🛠️ Future Improvements
-
-- Admin Dashboard
-- Webhook verification from Paystack
-- Rate limiting
-- Enhanced logging & monitoring
 
 ---
 
