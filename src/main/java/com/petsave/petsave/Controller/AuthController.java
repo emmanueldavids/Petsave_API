@@ -2,17 +2,17 @@ package com.petsave.petsave.Controller;
 
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.petsave.petsave.Service.AuthService;
-import com.petsave.petsave.dto.AuthResponse;
-import com.petsave.petsave.dto.LoginRequest;
-import com.petsave.petsave.dto.RegisterRequest;
-import com.petsave.petsave.dto.ResetConfirmRequest;
-import com.petsave.petsave.dto.ResetPasswordRequest;
-import com.petsave.petsave.dto.TokenRefreshRequest;
-import com.petsave.petsave.dto.TokenResponse;
-import com.petsave.petsave.dto.VerifyRequest;
+import com.petsave.petsave.dto.*;
+import com.petsave.petsave.Entity.User;
+import com.petsave.petsave.Repository.UserRepository;
+
+import java.util.List;
+import java.util.Optional;
 
 import jakarta.validation.Valid;
 
@@ -22,6 +22,7 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     public AuthResponse register(@RequestBody @Valid RegisterRequest request) {
@@ -62,7 +63,22 @@ public class AuthController {
     public AuthResponse logout() {
         return new AuthResponse("Logout successful. Please delete the token on client.");
     }
+    
 
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+        List<User> users = authService.getAllUsers();
+        if (users.isEmpty()) {
+            return ResponseEntity.ok("No users found.");
+        }
+        return ResponseEntity.ok(users);
+    }
 
+    @GetMapping("/users/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        Optional<User> user = authService.getUserById(id);
+        return user.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
 }
