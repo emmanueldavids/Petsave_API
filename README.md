@@ -61,7 +61,7 @@ src/main/java/com/petsave/petsave/
 
 | Method | Endpoint                 | Description                      |
 |--------|--------------------------|----------------------------------|
-| POST   | `/api/donations/pay`     | Initialize a donation (Paystack) |
+| POST   | `/api/donations`     | Initialize a donation (Paystack) |
 | GET    | `/api/donations`         | Get all donations                |
 | GET    | `/api/donations/{id}`    | Get donation by ID               |
 | PUT    | `/api/donations/{id}`    | Update donation by ID            |
