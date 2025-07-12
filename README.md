@@ -64,7 +64,8 @@ src/main/java/com/petsave/petsave/
 | POST   | `/api/donations/pay`     | Initialize a donation (Paystack) |
 | GET    | `/api/donations`         | Get all donations                |
 | GET    | `/api/donations/{id}`    | Get donation by ID               |
-
+| PUT    | `/api/donations/{id}`    | Update donation by ID            |
+| DELETE | `/api/donations/{id}`    | Delete donation by ID            |
 ---
 
 ## 🧪 Swagger Documentation
@@ -87,8 +88,12 @@ spring.datasource.username=your_db_user
 spring.datasource.password=your_db_pass
 
 paystack.secret.key=sk_test_your_key
-spring.mail.username=youremail@example.com
+paystack.public.key=pk_test_your_key
+
+spring.mail.username=your-email@example.com
 spring.mail.password=yourpassword
+
+jwt_secret_key=jwt-secret-key
 ```
 
 ---
