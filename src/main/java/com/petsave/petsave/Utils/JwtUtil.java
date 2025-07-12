@@ -2,6 +2,8 @@ package com.petsave.petsave.Utils;
 
 
 import io.jsonwebtoken.*;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -9,7 +11,8 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final String jwtSecret = "j8KqQB7rdXeIF6QQhRjdgL6F2IZeAXFjAgNZF1/WBmY=";
+    @Value("${jwt.secret.key}")
+    private String jwtSecret;
     private final long jwtExpirationMs = 86400000; // 24 hours
 
     public String generateRefreshToken(String email) {
