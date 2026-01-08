@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -18,7 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User implements org.springframework.security.core.userdetails.UserDetails {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +36,10 @@ public class User implements org.springframework.security.core.userdetails.UserD
     private String password;
 
     private boolean isVerified;
+
+    @Enumerated(EnumType.STRING)
+    private OtpType otpType;
+
 
     private String verificationCode;
     private LocalDateTime verificationCodeExpiresAt;

@@ -1,20 +1,16 @@
 package com.petsave.petsave.Controller;
 
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.petsave.petsave.Service.AuthService;
 import com.petsave.petsave.dto.*;
 import com.petsave.petsave.Entity.User;
-import com.petsave.petsave.Repository.UserRepository;
-
-import java.util.List;
-import java.util.Optional;
 
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -22,16 +18,15 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
 
     @PostMapping("/register")
-    public AuthResponse register(@RequestBody @Valid RegisterRequest request) {
+    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 
-    @PostMapping("/verify")
-    public AuthResponse verify(@RequestBody VerifyRequest request) {
-        return authService.verifyEmail(request);
+    @PostMapping("/verify-otp")
+    public AuthResponse verifyOtp(@RequestBody @Valid VerifyOtpDTO request) {
+        return authService.verifyOtp(request);
     }
 
     @PostMapping("/resend")
@@ -43,6 +38,7 @@ public class AuthController {
     public TokenResponse login(@RequestBody LoginRequest request) {
         return authService.login(request);
     }
+
     @PostMapping("/refresh")
     public TokenResponse refresh(@RequestBody TokenRefreshRequest request) {
         return authService.refreshToken(request);
@@ -58,27 +54,15 @@ public class AuthController {
         return authService.confirmResetPassword(request);
     }
 
-
-    @GetMapping("/logout")
-    public AuthResponse logout() {
-        return new AuthResponse("Logout successful. Please delete the token on client.");
-    }
-    
-
     @GetMapping("/users")
-    public ResponseEntity<?> getAllUsers() {
-        List<User> users = authService.getAllUsers();
-        if (users.isEmpty()) {
-            return ResponseEntity.ok("No users found.");
-        }
-        return ResponseEntity.ok(users);
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(authService.getAllUsers());
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        Optional<User> user = authService.getUserById(id);
-        return user.map(ResponseEntity::ok)
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        return authService.getUserById(id)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
 }
