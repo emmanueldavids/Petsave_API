@@ -70,12 +70,14 @@ public class AuthService {
 
     if (request.getOtpType() == OtpType.EMAIL_VERIFICATION) {
         user.setVerified(true);
+        // clear OTP after email verification
+        user.setVerificationCode(null);
+        user.setOtpType(null);
+        user.setVerificationCodeExpiresAt(null);
     }
-
-    // clear OTP after use
-    user.setVerificationCode(null);
-    user.setOtpType(null);
-    user.setVerificationCodeExpiresAt(null);
+    
+    // For PASSWORD_RESET, keep the OTP for the reset confirmation step
+    // It will be cleared after password reset is confirmed
 
     userRepository.save(user);
 
