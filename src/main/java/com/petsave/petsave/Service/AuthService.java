@@ -213,6 +213,10 @@ public class AuthService {
         return userRepository.findById(id);
     }
 
+    public Long getUserCount() {
+        return userRepository.count();
+    }
+
     // ================= OTP HELPER =================
     private String generateOtp() {
         return String.valueOf(100000 + new Random().nextInt(900000));

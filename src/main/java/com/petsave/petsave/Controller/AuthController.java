@@ -74,6 +74,12 @@ public class AuthController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/users/count")
+    public ResponseEntity<Long> getUserCount() {
+        Long count = authService.getUserCount();
+        return ResponseEntity.ok(count);
+    }
+
     @GetMapping("/debug/email")
     public ResponseEntity<Map<String, String>> debugEmailConfig() {
         Map<String, String> config = new HashMap<>();
