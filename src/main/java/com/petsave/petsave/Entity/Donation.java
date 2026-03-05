@@ -5,6 +5,13 @@ import jakarta.persistence.*;
 
 
 @Entity
+@Table(name = "donations", indexes = {
+    @Index(name = "idx_donation_user", columnList = "user_id"),
+    @Index(name = "idx_donation_email", columnList = "email"),
+    @Index(name = "idx_donation_date", columnList = "date"),
+    @Index(name = "idx_donation_status", columnList = "paymentStatus"),
+    @Index(name = "idx_donation_reference", columnList = "reference")
+})
 public class Donation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

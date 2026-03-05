@@ -29,7 +29,11 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
 
     if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-        throw new RuntimeException("Email already exists");
+        throw new RuntimeException("Email already exists. Please use a different email address.");
+    }
+
+    if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+        throw new RuntimeException("Username already exists. Please choose a different username.");
     }
 
     String code = String.format("%06d", new Random().nextInt(999999));
@@ -57,16 +61,16 @@ public class AuthService {
     public AuthResponse verifyOtp(VerifyOtpDTO request) {
 
     User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException("User not found. Please check your email address."));
 
     if (!request.getCode().equals(user.getVerificationCode()))
-        throw new RuntimeException("Invalid OTP");
+        throw new RuntimeException("Invalid verification code. Please check your email and try again.");
 
     if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now()))
-        throw new RuntimeException("OTP expired");
+        throw new RuntimeException("Verification code has expired. Please request a new one.");
 
     if (user.getOtpType() != request.getOtpType())
-        throw new RuntimeException("OTP type mismatch");
+        throw new RuntimeException("Invalid verification code type. Please request a new code.");
 
     if (request.getOtpType() == OtpType.EMAIL_VERIFICATION) {
         user.setVerified(true);
@@ -89,10 +93,10 @@ public class AuthService {
     public AuthResponse resendCode(String email) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found. Please check your email address."));
 
         if (user.isVerified()) {
-            return new AuthResponse("User already verified.");
+            return new AuthResponse("Your email is already verified. You can proceed to login.");
         }
 
         String newOtp = generateOtp();
@@ -110,14 +114,14 @@ public class AuthService {
     public TokenResponse login(LoginRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found. Please check your username or email."));
 
         if (!user.isVerified()) {
-            throw new RuntimeException("Email not verified");
+            throw new RuntimeException("Please verify your email address before logging in. Check your inbox for the verification code.");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new RuntimeException("Invalid username or password. Please try again.");
         }
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail());

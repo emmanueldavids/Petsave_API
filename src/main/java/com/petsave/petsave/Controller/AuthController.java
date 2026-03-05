@@ -1,6 +1,7 @@
 package com.petsave.petsave.Controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,7 +11,8 @@ import com.petsave.petsave.Entity.User;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,6 +20,12 @@ import java.util.Optional;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Value("${spring.mail.username}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password}")
+    private String mailPassword;
 
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
@@ -64,5 +72,13 @@ public class AuthController {
         return authService.getUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/debug/email")
+    public ResponseEntity<Map<String, String>> debugEmailConfig() {
+        Map<String, String> config = new HashMap<>();
+        config.put("mailUsername", mailUsername != null ? mailUsername : "NULL");
+        config.put("mailPassword", mailPassword != null ? "SET" : "NULL");
+        return ResponseEntity.ok(config);
     }
 }

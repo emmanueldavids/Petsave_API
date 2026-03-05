@@ -5,26 +5,22 @@ import com.petsave.petsave.Entity.Donation;
 import com.petsave.petsave.Entity.PaymentStatus;
 import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.DonationRepository;
-import com.petsave.petsave.Repository.UserRepository;
 import com.petsave.petsave.dto.DonationRequest;
 import com.petsave.petsave.dto.DonationResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Transactional
 public class DonationService {
 
     @Value("${paystack.secret.key}")
@@ -34,11 +30,9 @@ public class DonationService {
     private WebClient webClient;
 
     private final DonationRepository donationRepository;
-    private final UserRepository userRepository;
 
-    public DonationService(DonationRepository donationRepository, UserRepository userRepository, WebClient.Builder webClientBuilder) {
+    public DonationService(DonationRepository donationRepository, WebClient.Builder webClientBuilder) {
         this.donationRepository = donationRepository;
-        this.userRepository = userRepository;
         this.webClient = webClientBuilder.build();
     }
 
@@ -96,10 +90,7 @@ public class DonationService {
     }
 
     public Double getTotalDonations() {
-        return donationRepository.findAll()
-                .stream()
-                .mapToDouble(Donation::getAmount)
-                .sum();
+        return donationRepository.getTotalAmount();
     }
 
     public Long getDonationCount() {

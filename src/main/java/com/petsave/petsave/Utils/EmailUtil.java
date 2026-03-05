@@ -1,22 +1,20 @@
 package com.petsave.petsave.Utils;
 
-
+import com.petsave.petsave.Service.AsyncEmailService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class EmailUtil {
 
-    private final JavaMailSender mailSender;
+    private final AsyncEmailService asyncEmailService;
 
     public void sendVerificationEmail(String to, String code) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject("Petsave Email Verification");
-        message.setText("Your verification code is: " + code);
-        mailSender.send(message);
+        asyncEmailService.sendVerificationEmailAsync(to, code);
+    }
+
+    public void sendPasswordResetEmail(String to, String code) {
+        asyncEmailService.sendPasswordResetEmailAsync(to, code);
     }
 }
