@@ -47,6 +47,9 @@ public class SecurityConfig {
                     "/api/donations/**",
                     "/api/contact",
                     "/api/adoptions/**",
+                    "/api/pets/**",
+                    "/uploads/**",
+                    "/uploads/pet-images/**",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>PetSave Email</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f5f5f5;
+                margin: 0;
+                padding: 20px;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .logo {
+                width: 120px;
+                height: auto;
+            }
+            .title {
+                color: #2E86C1;
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+            .content {
+                margin-bottom: 30px;
+                line-height: 1.6;
+            }
+            .button {
+                display: inline-block;
+                background-color: #2E86C1;
+                color: white;
+                padding: 12px 25px;
+                text-decoration: none;
+                border-radius: 5px;
+                margin: 20px 0;
+            }
+            .verification-code {
+                background-color: #f8f9fa;
+                border: 2px dashed #2E86C1;
+                padding: 15px;
+                text-align: center;
+                font-size: 24px;
+                font-weight: bold;
+                letter-spacing: 3px;
+                margin: 20px 0;
+                border-radius: 5px;
+            }
+            .footer {
+                font-size: 12px;
+                color: gray;
+                text-align: center;
+                margin-top: 30px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="header">
+                <img src="cid:logo" alt="PetSave Logo" class="logo" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"/>
+                <div style="display:none; text-align:center; margin-bottom:20px;">
+                    <h1 style="color:#2E86C1; font-size:32px; margin:0; font-weight:bold;">🐾 PetSave</h1>
+                </div>
+                <h1 class="title">PetSave</h1>
+            </div>
+
+            <div class="content">
+                <p>Hello <strong th:text="${name}">User</strong>,</p>
+                
+                <!-- Verification Code Section -->
+                <div th:if="${verificationCode != null}">
+                    <p>Your verification code is:</p>
+                    <div class="verification-code" th:text="${verificationCode}">123456</div>
+                    <p>This code will expire in 15 minutes.</p>
+                </div>
+                
+                <!-- Welcome Message -->
+                <div th:if="${verificationCode == null}">
+                    <p th:if="${subject == null or subject == 'Welcome'}">
+                        Welcome to PetSave! Your account has been successfully created. 
+                        You can now start helping pets find safe homes.
+                    </p>
+                    <p th:if="${subject == 'Password Reset'}">
+                        You requested to reset your password. Use the verification code below to continue.
+                    </p>
+                    <p th:if="${subject == 'Email Verification'}">
+                        Please verify your email address to complete your registration.
+                    </p>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <a th:href="${loginUrl}" class="button">
+                    <span th:if="${verificationCode == null}">Login to PetSave</span>
+                    <span th:if="${verificationCode != null}">Continue to PetSave</span>
+                </a>
+            </div>
+
+            <div class="footer">
+                <p>If you did not create this account or request this action, please ignore this email.</p>
+                <p>&copy; 2024 PetSave. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+</html>

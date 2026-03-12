@@ -41,6 +41,10 @@ public class Adoption {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pet_id")
+    private Pet pet;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -206,6 +210,14 @@ public class Adoption {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public Pet getPet() {
+        return pet;
+    }
+
+    public void setPet(Pet pet) {
+        this.pet = pet;
     }
 
     public LocalDateTime getCreatedAt() {

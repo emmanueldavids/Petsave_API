@@ -1,11 +1,14 @@
 package com.petsave.petsave.dto;
 
+import java.time.LocalDateTime;
+
 public class BlogResponse {
     private Long id;
     private String title;
     private String content;
     private String author;
     private String imageUrl;
+    private LocalDateTime createdAt;
 
 
     // Getters and setters
@@ -45,6 +48,14 @@ public class BlogResponse {
     }
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
     
 }

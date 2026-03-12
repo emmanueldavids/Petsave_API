@@ -50,7 +50,7 @@ public class AuthService {
             .build();
 
     userRepository.save(user);
-    emailUtil.sendVerificationEmail(user.getEmail(), code);
+    emailUtil.sendVerificationEmail(user.getEmail(), code, user.getName());
 
     return new AuthResponse("Registration successful. Check email for verification code.");
 }
@@ -78,6 +78,9 @@ public class AuthService {
         user.setVerificationCode(null);
         user.setOtpType(null);
         user.setVerificationCodeExpiresAt(null);
+        
+        // Send welcome email after successful verification
+        emailUtil.sendWelcomeEmail(user.getEmail(), user.getName());
     }
     
     // For PASSWORD_RESET, keep the OTP for the reset confirmation step
@@ -105,15 +108,15 @@ public class AuthService {
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         userRepository.save(user);
 
-        emailUtil.sendVerificationEmail(user.getEmail(), newOtp);
+        emailUtil.sendVerificationEmail(user.getEmail(), newOtp, user.getName());
 
         return new AuthResponse("New verification code sent.");
     }
 
     // ================= LOGIN =================
-    public TokenResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
 
-        User user = userRepository.findByUsername(request.getUsername())
+        User user = userRepository.findByEmail(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found. Please check your username or email."));
 
         if (!user.isVerified()) {
@@ -131,7 +134,14 @@ public class AuthService {
         user.setRefreshTokenExpiry(LocalDateTime.now().plusDays(7));
         userRepository.save(user);
 
-        return new TokenResponse(accessToken, refreshToken);
+        return new LoginResponse(
+            accessToken, 
+            refreshToken, 
+            user.getName(), 
+            user.getUsername(), 
+            user.getEmail(), 
+            "USER" // Default role for now
+        );
     }
 
     // ================= REFRESH TOKEN =================
@@ -172,7 +182,7 @@ public class AuthService {
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(10));
         userRepository.save(user);
 
-        emailUtil.sendVerificationEmail(user.getEmail(), code);
+        emailUtil.sendPasswordResetEmail(user.getEmail(), code, user.getName());
 
         return new AuthResponse("Reset OTP sent to email.");
     }

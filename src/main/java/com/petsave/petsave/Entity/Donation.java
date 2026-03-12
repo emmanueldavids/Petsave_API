@@ -34,6 +34,10 @@ public class Donation {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pet_id")
+    private Pet pet;
+
     public Donation(
         Long id, 
         String donorName, 
@@ -166,6 +170,14 @@ public class Donation {
     }
     public void setReference(String reference) {
         this.reference = reference;
+    }
+
+    public Pet getPet() {
+        return pet;
+    }
+
+    public void setPet(Pet pet) {
+        this.pet = pet;
     }   
 
 }

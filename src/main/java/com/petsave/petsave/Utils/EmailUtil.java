@@ -10,11 +10,15 @@ public class EmailUtil {
 
     private final AsyncEmailService asyncEmailService;
 
-    public void sendVerificationEmail(String to, String code) {
-        asyncEmailService.sendVerificationEmailAsync(to, code);
+    public void sendVerificationEmail(String to, String code, String name) {
+        asyncEmailService.sendVerificationEmailAsync(to, code, name);
     }
 
-    public void sendPasswordResetEmail(String to, String code) {
-        asyncEmailService.sendPasswordResetEmailAsync(to, code);
+    public void sendPasswordResetEmail(String to, String code, String name) {
+        asyncEmailService.sendPasswordResetEmailAsync(to, code, name);
+    }
+
+    public void sendWelcomeEmail(String to, String name) {
+        asyncEmailService.sendWelcomeEmailAsync(to, name);
     }
 }

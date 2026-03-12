@@ -3,8 +3,11 @@ package com.petsave.petsave.Service;
 
 import com.petsave.petsave.Entity.Donation;
 import com.petsave.petsave.Entity.PaymentStatus;
+import com.petsave.petsave.Entity.Pet;
+import com.petsave.petsave.Entity.PetStatus;
 import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.DonationRepository;
+import com.petsave.petsave.Repository.PetRepository;
 import com.petsave.petsave.dto.DonationRequest;
 import com.petsave.petsave.dto.DonationResponse;
 
@@ -30,9 +33,11 @@ public class DonationService {
     private WebClient webClient;
 
     private final DonationRepository donationRepository;
+    private final PetRepository petRepository;
 
-    public DonationService(DonationRepository donationRepository, WebClient.Builder webClientBuilder) {
+    public DonationService(DonationRepository donationRepository, PetRepository petRepository, WebClient.Builder webClientBuilder) {
         this.donationRepository = donationRepository;
+        this.petRepository = petRepository;
         this.webClient = webClientBuilder.build();
     }
 
@@ -90,7 +95,7 @@ public class DonationService {
     }
 
     public Double getTotalDonations() {
-        return donationRepository.getTotalAmount();
+        return donationRepository.getTotalAmount(PaymentStatus.COMPLETED);
     }
 
     public Long getDonationCount() {
@@ -172,6 +177,74 @@ public class DonationService {
         return donations.stream()
             .map(this::mapToResponse)
             .toList();
+    }
+
+    // Method to handle payment completion and update pet status
+    public Donation handlePaymentSuccess(String reference) {
+        Donation donation = donationRepository.findByReference(reference)
+            .orElseThrow(() -> new RuntimeException("Donation not found with reference: " + reference));
+        
+        donation.setPaymentStatus(PaymentStatus.COMPLETED);
+        
+        // Automatically update pet status if donation is linked to a pet
+        if (donation.getPet() != null) {
+            Pet pet = donation.getPet();
+            // If pet doesn't have a specific status yet, mark it as rescued through donation
+            if (pet.getStatus() == PetStatus.FOR_ADOPTION || pet.getStatus() == PetStatus.IN_TREATMENT) {
+                pet.setStatus(PetStatus.RESCUED_DONATION);
+                petRepository.save(pet);
+            }
+        }
+        
+        return donationRepository.save(donation);
+    }
+
+    // Method to create donation linked to a specific pet
+    public Donation createPetDonation(DonationRequest donationRequest, Long petId, Authentication auth) {
+        String reference = UUID.randomUUID().toString();
+        
+        Pet pet = petRepository.findById(petId)
+            .orElseThrow(() -> new RuntimeException("Pet not found with id: " + petId));
+
+        Donation donation = new Donation();
+        donation.setDonorName(donationRequest.getDonorName());
+        donation.setEmail(donationRequest.getEmail());
+        donation.setAmount(donationRequest.getAmount());
+        donation.setGender(donationRequest.getGender());
+        donation.setCountry(donationRequest.getCountry());
+        donation.setDate(LocalDateTime.now());
+        donation.setReference(reference);
+        donation.setPaymentStatus(PaymentStatus.PENDING);
+        donation.setPet(pet);
+
+        // Get authenticated user
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            User user = (User) auth.getPrincipal();
+            donation.setUser(user);
+            donation.setEmail(user.getEmail());
+        }
+
+        donationRepository.save(donation);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("email", donation.getEmail());
+        payload.put("amount", (int)(donation.getAmount() * 100));
+        payload.put("reference", reference);
+        payload.put("callback_url", "https://yourapp.com/payment/callback?ref=" + reference);
+
+        return webClient.post()
+                .uri(INIT_URL)
+                .header("Authorization", "Bearer " + PAYSTACK_SECRET)
+                .header("Content-Type", "application/json")
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .map(response -> {
+                    String authUrl = (String) ((Map<String, Object>) response.get("data")).get("authorization_url");
+                    // Save donation with payment URL
+                    return donationRepository.save(donation);
+                })
+                .block();
     }
 
 

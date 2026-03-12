@@ -2,9 +2,12 @@ package com.petsave.petsave.Service;
 
 import com.petsave.petsave.Entity.Adoption;
 import com.petsave.petsave.Entity.AdoptionStatus;
+import com.petsave.petsave.Entity.Pet;
+import com.petsave.petsave.Entity.PetStatus;
 import com.petsave.petsave.Entity.PetType;
 import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.AdoptionRepository;
+import com.petsave.petsave.Repository.PetRepository;
 import com.petsave.petsave.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +25,7 @@ public class AdoptionService {
 
     private final AdoptionRepository adoptionRepository;
     private final UserRepository userRepository;
+    private final PetRepository petRepository;
 
     public Adoption createAdoption(Adoption adoption, Long userId) {
         User user = userRepository.findById(userId)
@@ -29,6 +33,14 @@ public class AdoptionService {
         
         adoption.setUser(user);
         adoption.setStatus(AdoptionStatus.PENDING);
+        
+        // Automatically update pet status when adoption is created
+        if (adoption.getPet() != null) {
+            Pet pet = adoption.getPet();
+            pet.setStatus(PetStatus.PENDING_ADOPTION);
+            pet.setAvailable(false);
+            petRepository.save(pet);
+        }
         
         return adoptionRepository.save(adoption);
     }
@@ -71,6 +83,29 @@ public class AdoptionService {
                 .orElseThrow(() -> new RuntimeException("Adoption not found with id: " + id));
         
         adoption.setStatus(status);
+        
+        // Automatically update pet status based on adoption status
+        if (adoption.getPet() != null) {
+            Pet pet = adoption.getPet();
+            switch (status) {
+                case APPROVED:
+                    pet.setStatus(PetStatus.ADOPTED);
+                    pet.setAvailable(false);
+                    pet.setAdoptionDate(java.time.LocalDateTime.now().toString());
+                    break;
+                case REJECTED:
+                case CANCELLED:
+                    pet.setStatus(PetStatus.FOR_ADOPTION);
+                    pet.setAvailable(true);
+                    break;
+                case PENDING:
+                    pet.setStatus(PetStatus.PENDING_ADOPTION);
+                    pet.setAvailable(false);
+                    break;
+            }
+            petRepository.save(pet);
+        }
+        
         return adoptionRepository.save(adoption);
     }
 

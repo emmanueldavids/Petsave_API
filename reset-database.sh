@@ -23,7 +23,7 @@ echo "📊 Database: $DB_NAME"
 echo "🌐 Host: $DB_HOST:$DB_PORT"
 
 # Check if we can connect
-if ! psql $DB_URL -c "SELECT 1;" > /dev/null 2>&1; then
+if ! psql -h localhost -p 5432 -U postgres -d petsaveDB -c "SELECT 1;" > /dev/null 2>&1; then
     echo "❌ Error: Cannot connect to database"
     echo "Please check your connection and credentials"
     exit 1
@@ -34,7 +34,7 @@ echo "✅ Connected to database"
 # Get current table counts
 echo ""
 echo "📋 Current Database Status:"
-psql $DB_URL -c "
+psql -h localhost -p 5432 -U postgres -d petsaveDB -c "
 SELECT 
     table_name as \"Table\", 
     (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = t.table_name) as \"Columns\"
@@ -50,14 +50,14 @@ echo "🧹 Clearing existing data..."
 TABLES=("users" "adoptions" "donations")
 
 for table in "${TABLES[@]}"; do
-    if psql $DB_URL -c "\dt $table" 2>/dev/null | grep -q "$table"; then
+    if psql -h localhost -p 5432 -U postgres -d petsaveDB -c "\dt $table" 2>/dev/null | grep -q "$table"; then
         echo "  🗑️  Clearing table: $table"
-        psql $DB_URL -c "DELETE FROM $table;" 2>/dev/null
+        psql -h localhost -p 5432 -U postgres -d petsaveDB -c "DELETE FROM $table;" 2>/dev/null
         
         # Reset sequence if it exists
         seq_name="${table}_id_seq"
-        if psql $DB_URL -c "\d $seq_name" 2>/dev/null | grep -q "Sequence"; then
-            psql $DB_URL -c "ALTER SEQUENCE $seq_name RESTART WITH 1;" 2>/dev/null
+        if psql -h localhost -p 5432 -U postgres -d petsaveDB -c "\d $seq_name" 2>/dev/null | grep -q "Sequence"; then
+            psql -h localhost -p 5432 -U postgres -d petsaveDB -c "ALTER SEQUENCE $seq_name RESTART WITH 1;" 2>/dev/null
             echo "  🔄 Reset sequence: $seq_name"
         fi
     else

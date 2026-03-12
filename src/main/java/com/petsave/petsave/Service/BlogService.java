@@ -35,11 +35,21 @@ public class BlogService {
         blog.setTitle(blogRequest.getTitle());
         blog.setContent(blogRequest.getContent());
         blog.setAuthor(blogRequest.getAuthor());
+        blog.setCreatedAt(java.time.LocalDateTime.now());
 
         MultipartFile image = blogRequest.getImage();
         if (image != null && !image.isEmpty()) {
-            String imagePath = saveImage(image);
-            blog.setImageUrl(imagePath);
+            try {
+                // Store image bytes in database
+                blog.setImage(image.getBytes());
+                blog.setImageType(image.getContentType());
+                
+                // Also save to filesystem for serving
+                String imagePath = saveImage(image);
+                blog.setImageUrl(imagePath);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to process image: " + e.getMessage(), e);
+            }
         }
 
         blog = blogRepository.save(blog);
@@ -60,8 +70,17 @@ public class BlogService {
 
             MultipartFile image = blogRequest.getImage();
             if (image != null && !image.isEmpty()) {
-                String imagePath = saveImage(image);
-                existing.setImageUrl(imagePath);
+                try {
+                    // Update image bytes in database
+                    existing.setImage(image.getBytes());
+                    existing.setImageType(image.getContentType());
+                    
+                    // Also save new image to filesystem
+                    String imagePath = saveImage(image);
+                    existing.setImageUrl(imagePath);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to process image: " + e.getMessage(), e);
+                }
             }
 
             Blog updatedBlog = blogRepository.save(existing);
@@ -97,6 +116,7 @@ public class BlogService {
         response.setContent(blog.getContent());
         response.setAuthor(blog.getAuthor());
         response.setImageUrl(blog.getImageUrl());
+        response.setCreatedAt(blog.getCreatedAt());
         return response;
     }
 }

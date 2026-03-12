@@ -8,7 +8,6 @@ import com.petsave.petsave.Utils.JwtUtil;
 import com.petsave.petsave.dto.DonationRequest;
 import com.petsave.petsave.dto.DonationResponse;
 
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -107,6 +106,25 @@ public class DonationController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = auth.getName(); // should be email
         return donationService.getDonationsByCurrentUser(userEmail);
+    }
+
+    // New endpoint for pet-specific donations
+    @PostMapping("/pet/{petId}")
+    public ResponseEntity<Map<String, String>> donateToPet(
+        @PathVariable Long petId,
+        @RequestBody DonationRequest donationRequest,
+        Authentication auth
+    ) {
+        donationService.createPetDonation(donationRequest, petId, auth);
+        return ResponseEntity.ok(Map.of("message", "Donation initiated for pet"));
+    }
+
+    // Webhook endpoint for payment success
+    @PostMapping("/webhook/success")
+    public ResponseEntity<Map<String, String>> handlePaymentSuccess(@RequestBody Map<String, String> payload) {
+        String reference = payload.get("reference");
+        donationService.handlePaymentSuccess(reference);
+        return ResponseEntity.ok(Map.of("message", "Payment processed successfully"));
     }
    
 }

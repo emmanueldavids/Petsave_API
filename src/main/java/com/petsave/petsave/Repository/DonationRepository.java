@@ -2,7 +2,9 @@ package com.petsave.petsave.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import com.petsave.petsave.Entity.Donation;
+import com.petsave.petsave.Entity.PaymentStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,8 +17,8 @@ public interface DonationRepository extends JpaRepository< Donation, Long> {
     Optional<Donation> findByReference(String reference);
     List<Donation> findByUserEmail(String email);
     
-    @Query("SELECT COALESCE(SUM(d.amount), 0.0) FROM Donation d WHERE d.paymentStatus = 'COMPLETED'")
-    Double getTotalAmount();
+    @Query("SELECT COALESCE(SUM(d.amount), 0.0) FROM Donation d WHERE d.paymentStatus = :status")
+    Double getTotalAmount(@Param("status") PaymentStatus status);
     
     // List<Donation> findByUsername(String username);
 
