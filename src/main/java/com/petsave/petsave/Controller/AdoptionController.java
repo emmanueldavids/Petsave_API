@@ -37,6 +37,9 @@ public class AdoptionController {
         var pet = petService.getPetById(request.getPetId())
             .orElseThrow(() -> new RuntimeException("Pet not found with id: " + request.getPetId()));
         
+        // Set the pet's image URL from the fetched pet
+        request.setPetImageUrl(pet.getImageUrl());
+        
         Adoption adoption = convertToEntity(request);
         adoption.setPet(pet); // Link the pet to the adoption
         

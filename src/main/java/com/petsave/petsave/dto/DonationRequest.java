@@ -1,16 +1,30 @@
 package com.petsave.petsave.dto;
 
 import java.time.LocalDateTime;
-
 import com.petsave.petsave.Entity.Gender;
+import jakarta.validation.constraints.*;
 
 public class DonationRequest {
+    
+    @NotBlank(message = "Donor name is required")
     private String donorName;
+    
+    @NotNull(message = "Amount is required")
+    @Min(value = 1, message = "Amount must be at least 1")
     private Float amount;
+    
     private LocalDateTime date;
+    
+    @NotNull(message = "Gender is required")
     private Gender gender;
+    
+    @NotBlank(message = "Country is required")
     private String country;
+    
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
     private String email;
+    
     private String reference;
 
     public DonationRequest(String donorName, Float amount, LocalDateTime date, Gender gender, String country, String email, String reference) {

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @Entity
@@ -12,6 +13,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Pet {
     
     @Id
@@ -27,19 +29,11 @@ public class Pet {
     @Column(nullable = false)
     private Integer age;
     
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false)
     private String description;
     
+    @Column(nullable = false)
     private String imageUrl;
-    
-    // Temporarily removed LOB fields to fix serialization issue
-    // @Lob
-    // @Column(length = 1000000) // For large images
-    // @JsonIgnore
-    // private byte[] image;
-    
-    // @JsonIgnore
-    // private String imageType;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -101,10 +95,4 @@ public class Pet {
     
     @Column(nullable = false)
     private Long favoriteCount;
-
-    @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL)
-    private List<Adoption> adoptions;
-
-    @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL)
-    private List<Donation> donations;
 }

@@ -2,7 +2,8 @@ package com.petsave.petsave.Entity;
 
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "donations", indexes = {
@@ -12,6 +13,7 @@ import jakarta.persistence.*;
     @Index(name = "idx_donation_status", columnList = "paymentStatus"),
     @Index(name = "idx_donation_reference", columnList = "reference")
 })
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Donation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +34,12 @@ public class Donation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pet_id")
+    @JsonIgnore
     private Pet pet;
 
     public Donation(
