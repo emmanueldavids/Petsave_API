@@ -1,5 +1,7 @@
 package com.petsave.petsave.Entity;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum PetStatus {
     RESCUED_DONATION("Rescued through Donation"),
     FOR_ADOPTION("Available for Adoption"),
@@ -20,5 +22,10 @@ public enum PetStatus {
 
     public String getDisplayName() {
         return displayName;
+    }
+    
+    @JsonValue
+    public String toJson() {
+        return this.name();
     }
 }

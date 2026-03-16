@@ -4,6 +4,7 @@ import com.petsave.petsave.Entity.Adoption;
 import com.petsave.petsave.Entity.AdoptionStatus;
 import com.petsave.petsave.Entity.PetType;
 import com.petsave.petsave.Service.AdoptionService;
+import com.petsave.petsave.Service.PetService;
 import com.petsave.petsave.dto.AdoptionRequest;
 import com.petsave.petsave.dto.AdoptionResponse;
 import com.petsave.petsave.dto.UserDto;
@@ -25,13 +26,20 @@ import java.util.stream.Collectors;
 public class AdoptionController {
 
     private final AdoptionService adoptionService;
+    private final PetService petService;
 
     @PostMapping
     public ResponseEntity<AdoptionResponse> createAdoption(@RequestBody AdoptionRequest request) {
         // For now, we'll use a hardcoded user ID. In a real app, you'd get this from the JWT token
         Long userId = 1L; // This should be extracted from JWT token
         
+        // Find the pet and link it to the adoption
+        var pet = petService.getPetById(request.getPetId())
+            .orElseThrow(() -> new RuntimeException("Pet not found with id: " + request.getPetId()));
+        
         Adoption adoption = convertToEntity(request);
+        adoption.setPet(pet); // Link the pet to the adoption
+        
         Adoption savedAdoption = adoptionService.createAdoption(adoption, userId);
         
         return ResponseEntity.ok(convertToResponse(savedAdoption));

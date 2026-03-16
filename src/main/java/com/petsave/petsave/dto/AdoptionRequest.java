@@ -5,6 +5,9 @@ import jakarta.validation.constraints.*;
 
 public class AdoptionRequest {
     
+    @NotNull(message = "Pet ID is required")
+    private Long petId;
+    
     @NotBlank(message = "Pet name is required")
     private String petName;
     
@@ -67,6 +70,14 @@ public class AdoptionRequest {
     }
 
     // Getters and Setters
+    public Long getPetId() {
+        return petId;
+    }
+
+    public void setPetId(Long petId) {
+        this.petId = petId;
+    }
+
     public String getPetName() {
         return petName;
     }
