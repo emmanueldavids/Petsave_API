@@ -48,8 +48,12 @@ public class SecurityConfig {
                     "/api/contact",
                     "/api/adoptions/**",
                     "/api/pets/**",
+                    "/api/posts/**",
+                    "/api/chats/**",
                     "/uploads/**",
                     "/uploads/pet-images/**",
+                    "/uploads/image/**",
+                    "/api/upload/**",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()
