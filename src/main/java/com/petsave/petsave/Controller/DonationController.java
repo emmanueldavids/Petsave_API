@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
+import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
@@ -22,6 +24,7 @@ import org.springframework.security.core.Authentication;
 @RestController
 @CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"}, allowCredentials = "true")
 @RequestMapping("/api/donations")
+@Slf4j
 public class DonationController {
 
     @Autowired
@@ -94,10 +97,16 @@ public class DonationController {
     @PostMapping
     public ResponseEntity<Map<String, String>> pay(
         @RequestBody DonationRequest donationRequest,
-        Authentication auth // ✅ Injected here
+        Authentication auth // Injected here
     ) {
-        String redirectUrl = donationService.initializePayment(donationRequest, auth);
-        return ResponseEntity.ok(Map.of("redirectUrl", redirectUrl));
+        try {
+            String redirectUrl = donationService.initializePayment(donationRequest, auth);
+            return ResponseEntity.ok(Map.of("redirectUrl", redirectUrl));
+        } catch (Exception e) {
+            log.error("Payment initialization failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(500)
+                .body(Map.of("message", "Failed to initialize payment: " + e.getMessage()));
+        }
     }
 
 
@@ -117,6 +126,37 @@ public class DonationController {
     ) {
         donationService.createPetDonation(donationRequest, petId, auth);
         return ResponseEntity.ok(Map.of("message", "Donation initiated for pet"));
+    }
+
+    // Test endpoint for Paystack integration
+    @PostMapping("/test-paystack")
+    public ResponseEntity<Map<String, Object>> testPaystack() {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("email", "test@example.com");
+            payload.put("amount", 2500);
+            payload.put("reference", "test_ref_" + System.currentTimeMillis());
+            payload.put("callback_url", "http://localhost:3000/callback");
+
+            log.info("Testing Paystack with payload: {}", payload);
+
+            WebClient webClient = WebClient.create();
+            Map<String, Object> response = webClient.post()
+                    .uri("https://api.paystack.co/transaction/initialize")
+                    .header("Authorization", "Bearer sk_test_531fdff89f75fd24201eeeee9cb265fed66981a7")
+                    .header("Content-Type", "application/json")
+                    .bodyValue(payload)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+            log.info("Paystack test response: {}", response);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Paystack test failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(500)
+                .body(Map.of("error", e.getMessage()));
+        }
     }
 
     // Webhook endpoint for payment success
