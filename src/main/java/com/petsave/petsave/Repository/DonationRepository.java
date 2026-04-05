@@ -20,6 +20,9 @@ public interface DonationRepository extends JpaRepository< Donation, Long> {
     @Query("SELECT COALESCE(SUM(d.amount), 0.0) FROM Donation d WHERE d.paymentStatus = :status")
     Double getTotalAmount(@Param("status") PaymentStatus status);
     
+    @Query("SELECT COALESCE(SUM(d.amount), 0.0) FROM Donation d")
+    Double getTotalAmountAll();
+    
     // List<Donation> findByUsername(String username);
 
 }

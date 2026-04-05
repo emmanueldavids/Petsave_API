@@ -1,7 +1,5 @@
 package com.petsave.petsave.Controller;
 
-import com.petsave.petsave.Entity.Donation;
-import com.petsave.petsave.Repository.DonationRepository;
 import com.petsave.petsave.Service.DonationService;
 import com.petsave.petsave.Service.PaymentService;
 import com.petsave.petsave.Utils.JwtUtil;
@@ -22,7 +20,7 @@ import org.springframework.security.core.Authentication;
 
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"}, allowCredentials = "true")
 @RequestMapping("/api/donations")
 @Slf4j
 public class DonationController {
@@ -33,9 +31,6 @@ public class DonationController {
     private PaymentService paymentService;
     @Autowired
     private JwtUtil jwtUtil;
-
-    @Autowired
-    private DonationRepository donationRepository;
 
 
 

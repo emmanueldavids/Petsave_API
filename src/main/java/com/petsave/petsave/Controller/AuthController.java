@@ -3,11 +3,14 @@ package com.petsave.petsave.Controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import com.petsave.petsave.Service.AuthService;
 import com.petsave.petsave.dto.*;
 import com.petsave.petsave.Entity.User;
+import com.petsave.petsave.Repository.UserRepository;
+import com.petsave.petsave.Utils.JwtUtil;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -20,6 +23,9 @@ import java.util.HashMap;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     @Value("${spring.mail.username}")
     private String mailUsername;
@@ -50,6 +56,54 @@ public class AuthController {
     @PostMapping("/refresh")
     public TokenResponse refresh(@RequestBody TokenRefreshRequest request) {
         return authService.refreshToken(request);
+    }
+
+    // Temporary debug endpoint for testing
+    @PostMapping("/debug-login")
+    public LoginResponse debugLogin(@RequestBody LoginRequest request) {
+        // For testing purposes, bypass verification
+        User user = userRepository.findByEmail(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found. Please check your username or email."));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        // Generate tokens without checking verification
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+
+        return new LoginResponse(
+                accessToken,
+                refreshToken,
+                user.getName(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
+
+    // Create test user for development
+    @PostMapping("/create-test-user")
+    public AuthResponse createTestUser() {
+        String testEmail = "testuser" + System.currentTimeMillis() + "@example.com";
+        String testUsername = "testuser" + System.currentTimeMillis();
+        
+        if (userRepository.findByEmail(testEmail).isPresent()) {
+            return new AuthResponse("Test user already exists");
+        }
+
+        User testUser = User.builder()
+                .name("Test User")
+                .username(testUsername)
+                .email(testEmail)
+                .password(passwordEncoder.encode("password123"))
+                .role("USER")
+                .isVerified(true)
+                .build();
+
+        userRepository.save(testUser);
+        return new AuthResponse("Test user created successfully. Use " + testEmail + " / password123 to login.");
     }
 
     @PostMapping("/reset-password/request")

@@ -97,7 +97,9 @@ public class DonationService {
     }
 
     public Double getTotalDonations() {
-        return donationRepository.getTotalAmount(PaymentStatus.COMPLETED);
+        // Get total of all donations regardless of payment status
+        // Since we're using mock payment for now, all donations should be counted
+        return donationRepository.getTotalAmountAll();
     }
 
     public Long getDonationCount() {

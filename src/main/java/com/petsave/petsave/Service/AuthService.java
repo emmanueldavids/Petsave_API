@@ -147,15 +147,23 @@ public class AuthService {
     // ================= REFRESH TOKEN =================
     public TokenResponse refreshToken(TokenRefreshRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!request.getRefreshToken().equals(user.getRefreshToken())) {
-            throw new RuntimeException("Invalid refresh token");
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new RuntimeException("Authentication failed: missing email");
         }
 
-        if (user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Refresh token expired");
+        if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
+            throw new RuntimeException("Authentication failed: missing refresh token");
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Authentication failed: user not found"));
+
+        if (user.getRefreshToken() == null || !request.getRefreshToken().equals(user.getRefreshToken())) {
+            throw new RuntimeException("Authentication failed: invalid refresh token");
+        }
+
+        if (user.getRefreshTokenExpiry() == null || user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Authentication failed: refresh token expired");
         }
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail());

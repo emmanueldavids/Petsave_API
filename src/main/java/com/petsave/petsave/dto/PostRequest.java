@@ -21,6 +21,8 @@ public class PostRequest {
     
     private String imageUrl;
     
+    private List<String> imageUrls;
+    
     private String location;
     
     private List<String> tags;

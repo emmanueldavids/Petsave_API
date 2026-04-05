@@ -26,6 +26,8 @@ public class PostResponse {
     
     private String imageUrl;
     
+    private List<String> imageUrls;
+    
     private String location;
     
     private Set<String> tags;
