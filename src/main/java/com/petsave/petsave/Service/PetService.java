@@ -36,6 +36,13 @@ public class PetService {
 
     // Create a new pet
     public Pet createPet(Pet pet) {
+        // Validate and fix undefined pet name
+        String name = pet.getName();
+        if (name == null || name.equals("undefined") || name.trim().isEmpty()) {
+            name = "Unknown Pet";
+            pet.setName(name);
+        }
+        
         log.info("Creating new pet: {}", pet.getName());
         
         // Set default values
@@ -147,11 +154,10 @@ public class PetService {
     // Update pet with image
     public Pet updatePetWithImage(Long id, Pet petDetails, MultipartFile image) {
         log.info("Updating pet with image: {}", id);
-        
+
         Pet existingPet = petRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pet not found with id: " + id));
-        
-        // Update all fields
+
         existingPet.setName(petDetails.getName());
         existingPet.setBreed(petDetails.getBreed());
         existingPet.setAge(petDetails.getAge());
@@ -177,26 +183,86 @@ public class PetService {
         existingPet.setMicrochipId(petDetails.getMicrochipId());
         existingPet.setRequiresExperienced(petDetails.getRequiresExperienced());
         existingPet.setAdoptionRequirements(petDetails.getAdoptionRequirements());
-        
-        // Handle image upload
+
+        if (petDetails.getImageUrl() != null && !petDetails.getImageUrl().isBlank()) {
+            existingPet.setImageUrl(petDetails.getImageUrl());
+        }
+
         if (image != null && !image.isEmpty()) {
             try {
-                // Temporarily disabled - LOB fields removed from entity
-                // existingPet.setImage(image.getBytes());
-                // existingPet.setImageType(image.getContentType());
-                
-                // Also save new image to filesystem
-                String imagePath = saveImage(image);
-                existingPet.setImageUrl(imagePath);
-            } catch (IOException e) {
-                log.error("Failed to process image: {}", e.getMessage(), e);
-                throw new RuntimeException("Failed to process image: " + e.getMessage(), e);
+                if (existingPet.getImageUrl() != null) {
+                    String oldImagePath = existingPet.getImageUrl().replace("/uploads/", "");
+                    java.io.File oldImageFile = new java.io.File("uploads/" + oldImagePath);
+                    if (oldImageFile.exists()) {
+                        oldImageFile.delete();
+                    }
+                }
+
+                String imageUrl = uploadImage(image);
+                existingPet.setImageUrl(imageUrl);
+            } catch (Exception e) {
+                log.error("Error uploading image: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to upload image: " + e.getMessage(), e);
             }
         }
-        
-        Pet savedPet = petRepository.save(existingPet);
-        log.info("Pet updated successfully with ID: {}", savedPet.getId());
-        return savedPet;
+
+        Pet updatedPet = petRepository.save(existingPet);
+        log.info("Pet updated successfully: {}", updatedPet.getId());
+
+        return updatedPet;
+    }
+
+    private String uploadImage(MultipartFile image) throws IOException {
+        try {
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+                log.info("Created upload directory: {}", uploadPath.toAbsolutePath());
+            }
+            
+            String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
+            Path filePath = uploadPath.resolve(fileName);
+            Files.write(filePath, image.getBytes());
+            log.info("Saved image to: {}", filePath.toAbsolutePath());
+            return "/uploads/pet-images/" + fileName; // returned as public URL path
+        } catch (IOException e) {
+            log.error("Failed to save image: {}", e.getMessage(), e);
+            throw new IOException("Failed to save image file: " + e.getMessage(), e);
+        }
+    }
+
+    private PetResponse convertToResponse(Pet pet) {
+        PetResponse response = new PetResponse();
+        response.setId(pet.getId());
+        response.setName(pet.getName());
+        response.setBreed(pet.getBreed());
+        response.setAge(pet.getAge());
+        response.setDescription(pet.getDescription());
+        response.setImageUrl(pet.getImageUrl());
+        response.setType(pet.getType());
+        response.setStatus(pet.getStatus());
+        response.setLocation(pet.getLocation());
+        response.setMedicalHistory(pet.getMedicalHistory());
+        response.setSpecialNeeds(pet.getSpecialNeeds());
+        response.setAvailable(pet.getAvailable());
+        response.setUploadedBy(pet.getUploadedBy());
+        response.setRescueDate(pet.getRescueDate());
+        response.setAdoptionDate(pet.getAdoptionDate());
+        response.setAdoptionFee(pet.getAdoptionFee());
+        response.setStory(pet.getStory());
+        response.setVaccinated(pet.getVaccinated());
+        response.setNeutered(pet.getNeutered());
+        response.setHouseTrained(pet.getHouseTrained());
+        response.setTemperament(pet.getTemperament());
+        response.setGoodWith(pet.getGoodWith());
+        response.setWeight(pet.getWeight());
+        response.setColor(pet.getColor());
+        response.setMicrochipId(pet.getMicrochipId());
+        response.setRequiresExperienced(pet.getRequiresExperienced());
+        response.setAdoptionRequirements(pet.getAdoptionRequirements());
+        response.setViewCount(pet.getViewCount());
+        response.setFavoriteCount(pet.getFavoriteCount());
+        return response;
     }
 
     // Get all pets with pagination

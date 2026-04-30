@@ -43,6 +43,15 @@ public class DonationService {
         this.webClient = webClientBuilder.build();
     }
 
+    // Dashboard statistics methods
+    public Double getTotalDonationsByUser(String userEmail) {
+        return donationRepository.getTotalAmountByUser(PaymentStatus.COMPLETED, userEmail);
+    }
+
+    public Long getDonationCountByUser(String userEmail) {
+        return donationRepository.getDonationCountByUser(PaymentStatus.COMPLETED, userEmail);
+    }
+
     public Page<DonationResponse> getAllDonations(String donorName, Pageable pageable) {
         Page<Donation> donations;
 

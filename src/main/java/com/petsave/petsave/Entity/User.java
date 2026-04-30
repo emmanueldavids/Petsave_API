@@ -7,8 +7,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,6 +43,7 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private OtpType otpType;
 
+    @Builder.Default
     @Column(name = "role")
     private String role = "USER";
 

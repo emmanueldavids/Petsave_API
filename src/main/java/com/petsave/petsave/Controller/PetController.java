@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -39,46 +41,11 @@ public class PetController {
 
     // Create a new pet with image upload
     @PostMapping(value = "/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Pet> createPetWithImage(
-            @RequestParam String name,
-            @RequestParam String breed,
-            @RequestParam Integer age,
-            @RequestParam String description,
-            @RequestParam String type,
-            @RequestParam String status,
-            @RequestParam String location,
-            @RequestParam Boolean available,
-            @RequestParam String uploadedBy,
-            @RequestParam String rescueDate,
-            @RequestParam Double adoptionFee,
-            @RequestParam Boolean vaccinated,
-            @RequestParam Boolean neutered,
-            @RequestParam Boolean houseTrained,
-            @RequestParam Boolean requiresExperienced,
-            @RequestParam String adoptionRequirements,
-            @RequestParam(required = false) MultipartFile image) {
-        
-        PetRequest request = new PetRequest();
-        request.setName(name);
-        request.setBreed(breed);
-        request.setAge(age);
-        request.setDescription(description);
-        request.setType(PetType.valueOf(type));
-        request.setStatus(PetStatus.valueOf(status));
-        request.setLocation(location);
-        request.setAvailable(available);
-        request.setUploadedBy(uploadedBy);
-        request.setRescueDate(rescueDate);
-        request.setAdoptionFee(adoptionFee);
-        request.setVaccinated(vaccinated);
-        request.setNeutered(neutered);
-        request.setHouseTrained(houseTrained);
-        request.setRequiresExperienced(requiresExperienced);
-        request.setAdoptionRequirements(adoptionRequirements);
-        request.setImage(image);
-        
+    public ResponseEntity<Pet> createPetWithImage(@Valid @ModelAttribute PetRequest request) {
+        normalizePetRequest(request);
+
         Pet pet = convertToEntity(request);
-        Pet savedPet = petService.createPetWithImage(pet, image);
+        Pet savedPet = petService.createPetWithImage(pet, request.getImage());
         return ResponseEntity.ok(savedPet);
     }
 
@@ -128,46 +95,12 @@ public class PetController {
     @PutMapping(value = "/{id}/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Pet> updatePetWithImage(
             @PathVariable Long id,
-            @RequestParam String name,
-            @RequestParam String breed,
-            @RequestParam Integer age,
-            @RequestParam String description,
-            @RequestParam String type,
-            @RequestParam String status,
-            @RequestParam String location,
-            @RequestParam Boolean available,
-            @RequestParam String uploadedBy,
-            @RequestParam String rescueDate,
-            @RequestParam Double adoptionFee,
-            @RequestParam Boolean vaccinated,
-            @RequestParam Boolean neutered,
-            @RequestParam Boolean houseTrained,
-            @RequestParam Boolean requiresExperienced,
-            @RequestParam String adoptionRequirements,
-            @RequestParam(required = false) MultipartFile image) {
-        
-        PetRequest request = new PetRequest();
-        request.setName(name);
-        request.setBreed(breed);
-        request.setAge(age);
-        request.setDescription(description);
-        request.setType(PetType.valueOf(type));
-        request.setStatus(PetStatus.valueOf(status));
-        request.setLocation(location);
-        request.setAvailable(available);
-        request.setUploadedBy(uploadedBy);
-        request.setRescueDate(rescueDate);
-        request.setAdoptionFee(adoptionFee);
-        request.setVaccinated(vaccinated);
-        request.setNeutered(neutered);
-        request.setHouseTrained(houseTrained);
-        request.setRequiresExperienced(requiresExperienced);
-        request.setAdoptionRequirements(adoptionRequirements);
-        request.setImage(image);
-        
+            @Valid @ModelAttribute PetRequest request) {
+
+        normalizePetRequest(request);
         Pet petDetails = convertToEntity(request);
         try {
-            Pet updatedPet = petService.updatePetWithImage(id, petDetails, image);
+            Pet updatedPet = petService.updatePetWithImage(id, petDetails, request.getImage());
             return ResponseEntity.ok(updatedPet);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -362,7 +295,14 @@ public class PetController {
     // Helper method to convert DTO to Entity
     private Pet convertToEntity(PetRequest request) {
         Pet pet = new Pet();
-        pet.setName(request.getName());
+        
+        // Validate and fix undefined values
+        String name = request.getName();
+        if (name == null || name.equals("undefined") || name.trim().isEmpty()) {
+            name = "Unknown Pet";
+        }
+        pet.setName(name);
+        
         pet.setBreed(request.getBreed());
         pet.setAge(request.getAge());
         pet.setDescription(request.getDescription());
@@ -389,5 +329,43 @@ public class PetController {
         pet.setRequiresExperienced(request.getRequiresExperienced());
         pet.setAdoptionRequirements(request.getAdoptionRequirements());
         return pet;
+    }
+
+    private void normalizePetRequest(PetRequest request) {
+        request.setName(normalizeText(request.getName()));
+        request.setBreed(normalizeText(request.getBreed()));
+        request.setDescription(normalizeText(request.getDescription()));
+        request.setImageUrl(normalizeText(request.getImageUrl()));
+        request.setLocation(normalizeText(request.getLocation()));
+        request.setMedicalHistory(normalizeText(request.getMedicalHistory()));
+        request.setSpecialNeeds(normalizeText(request.getSpecialNeeds()));
+        request.setUploadedBy(normalizeText(request.getUploadedBy()));
+        request.setRescueDate(normalizeText(request.getRescueDate()));
+        request.setAdoptionDate(normalizeText(request.getAdoptionDate()));
+        request.setStory(normalizeText(request.getStory()));
+        request.setTemperament(normalizeText(request.getTemperament()));
+        request.setGoodWith(normalizeText(request.getGoodWith()));
+        request.setColor(normalizeText(request.getColor()));
+        request.setMicrochipId(normalizeText(request.getMicrochipId()));
+        request.setAdoptionRequirements(normalizeText(request.getAdoptionRequirements()));
+
+        if (request.getName() == null || request.getBreed() == null || request.getDescription() == null
+                || request.getLocation() == null || request.getUploadedBy() == null || request.getRescueDate() == null) {
+            throw new IllegalArgumentException(
+                    "Required pet fields are missing or being sent as 'undefined'. Check the frontend FormData keys.");
+        }
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.isEmpty() || "undefined".equalsIgnoreCase(trimmed) || "null".equalsIgnoreCase(trimmed)) {
+            return null;
+        }
+
+        return trimmed;
     }
 }

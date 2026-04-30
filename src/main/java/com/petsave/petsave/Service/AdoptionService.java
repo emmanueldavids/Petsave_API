@@ -89,6 +89,7 @@ public class AdoptionService {
             Pet pet = adoption.getPet();
             switch (status) {
                 case APPROVED:
+                case COMPLETED:
                     pet.setStatus(PetStatus.ADOPTED);
                     pet.setAvailable(false);
                     pet.setAdoptionDate(java.time.LocalDateTime.now().toString());
@@ -149,5 +150,14 @@ public class AdoptionService {
 
     public Optional<Adoption> getAdoptionByAdopterEmail(String email) {
         return adoptionRepository.findByAdopterEmail(email);
+    }
+
+    // Dashboard statistics methods
+    public Long getPetsAdoptedByUser(String userEmail) {
+        return adoptionRepository.countByAdopterEmailAndStatus(userEmail, AdoptionStatus.APPROVED);
+    }
+
+    public Long getActiveApplicationsByUser(String userEmail) {
+        return adoptionRepository.countByAdopterEmailAndStatus(userEmail, AdoptionStatus.PENDING);
     }
 }

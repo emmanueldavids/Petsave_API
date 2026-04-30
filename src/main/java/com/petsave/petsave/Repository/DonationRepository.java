@@ -16,6 +16,13 @@ public interface DonationRepository extends JpaRepository< Donation, Long> {
     Page<Donation> findByDonorNameContainingIgnoreCase(String donorName, Pageable pageable);
     Optional<Donation> findByReference(String reference);
     List<Donation> findByUserEmail(String email);
+    List<Donation> findByEmailOrderByDateDesc(String email);
+    
+    @Query("SELECT COALESCE(SUM(d.amount), 0.0) FROM Donation d WHERE d.paymentStatus = :status AND d.email = :email")
+    Double getTotalAmountByUser(@Param("status") PaymentStatus status, @Param("email") String email);
+    
+    @Query("SELECT COUNT(d) FROM Donation d WHERE d.paymentStatus = :status AND d.email = :email")
+    Long getDonationCountByUser(@Param("status") PaymentStatus status, @Param("email") String email);
     
     @Query("SELECT COALESCE(SUM(d.amount), 0.0) FROM Donation d WHERE d.paymentStatus = :status")
     Double getTotalAmount(@Param("status") PaymentStatus status);
@@ -24,5 +31,4 @@ public interface DonationRepository extends JpaRepository< Donation, Long> {
     Double getTotalAmountAll();
     
     // List<Donation> findByUsername(String username);
-
 }

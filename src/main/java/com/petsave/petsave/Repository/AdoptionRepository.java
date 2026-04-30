@@ -35,4 +35,7 @@ public interface AdoptionRepository extends JpaRepository<Adoption, Long> {
     
     @Query("SELECT COUNT(a) FROM Adoption a WHERE a.petType = :petType")
     Long countByPetType(@Param("petType") PetType petType);
+    
+    @Query("SELECT COUNT(a) FROM Adoption a WHERE a.adopterEmail = :email AND a.status = :status")
+    Long countByAdopterEmailAndStatus(@Param("email") String email, @Param("status") AdoptionStatus status);
 }

@@ -21,6 +21,7 @@ public class MessageRequest {
     @Size(max = 2000, message = "Content must be less than 2000 characters")
     private String content;
     
+    @Builder.Default
     private String messageType = "TEXT";
     
     private String fileUrl;

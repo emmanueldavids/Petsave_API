@@ -4,13 +4,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.petsave.petsave.Service.AuthService;
+import com.petsave.petsave.Service.DonationService;
+import com.petsave.petsave.Service.AdoptionService;
 import com.petsave.petsave.dto.*;
 import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.UserRepository;
 import com.petsave.petsave.Utils.JwtUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -20,12 +24,16 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.00.1:3001"}, allowCredentials = "true")
 public class AuthController {
 
     private final AuthService authService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final DonationService donationService;
+    private final AdoptionService adoptionService;
 
     @Value("${spring.mail.username}")
     private String mailUsername;
@@ -140,5 +148,36 @@ public class AuthController {
         config.put("mailUsername", mailUsername != null ? mailUsername : "NULL");
         config.put("mailPassword", mailPassword != null ? "SET" : "NULL");
         return ResponseEntity.ok(config);
+    }
+
+    @GetMapping("/dashboard-stats")
+    public ResponseEntity<Map<String, Object>> getDashboardStats(@AuthenticationPrincipal(errorOnInvalidType = false) User currentUser) {
+        try {
+            if (currentUser == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "User not authenticated"));
+            }
+
+            String email = currentUser.getUsername();
+            log.info("Getting dashboard stats for user: {}", email);
+
+            // Get user's donation statistics
+            var totalDonationsAmount = donationService.getTotalDonationsByUser(email);
+            var totalDonationsCount = donationService.getDonationCountByUser(email);
+            
+            // Get user's adoption statistics
+            var petsAdopted = adoptionService.getPetsAdoptedByUser(email);
+            var activeApplications = adoptionService.getActiveApplicationsByUser(email);
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalDonationsAmount", totalDonationsAmount);
+            stats.put("totalDonationsCount", totalDonationsCount);
+            stats.put("petsAdopted", petsAdopted);
+            stats.put("activeApplications", activeApplications);
+
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error getting dashboard stats: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to get dashboard stats"));
+        }
     }
 }
