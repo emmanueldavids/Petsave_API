@@ -59,6 +59,7 @@ public class SecurityConfig {
                     "/api/users/count",
                     "/api/users/all",
                     "/ws",
+                    "/api/paystack/webhook",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()

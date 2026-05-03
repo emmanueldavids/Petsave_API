@@ -7,21 +7,23 @@ import com.petsave.petsave.dto.BlogResponse;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class BlogService {
 
     private final BlogRepository blogRepository;
-    private final String uploadDir = "uploads/blog-images/";
+    private final Cloudinary cloudinary;
 
-    public BlogService(BlogRepository blogRepository) {
+    public BlogService(BlogRepository blogRepository, Cloudinary cloudinary) {
         this.blogRepository = blogRepository;
+        this.cloudinary = cloudinary;
     }
 
     public List<BlogResponse> getAllBlogs() {
@@ -40,15 +42,23 @@ public class BlogService {
         MultipartFile image = blogRequest.getImage();
         if (image != null && !image.isEmpty()) {
             try {
-                // Store image bytes in database
-                blog.setImage(image.getBytes());
+                // Upload image to Cloudinary
+                Map<String, Object> uploadResult = cloudinary.uploader().upload(
+                    image.getBytes(),
+                    ObjectUtils.asMap(
+                        "folder", "blog-images",
+                        "public_id", "blog_" + System.currentTimeMillis(),
+                        "resource_type", "auto"
+                    )
+                );
+                
+                // Set Cloudinary URL
+                String imageUrl = (String) uploadResult.get("secure_url");
+                blog.setImageUrl(imageUrl);
                 blog.setImageType(image.getContentType());
                 
-                // Also save to filesystem for serving
-                String imagePath = saveImage(image);
-                blog.setImageUrl(imagePath);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to process image: " + e.getMessage(), e);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload image to Cloudinary: " + e.getMessage(), e);
             }
         }
 
@@ -71,15 +81,23 @@ public class BlogService {
             MultipartFile image = blogRequest.getImage();
             if (image != null && !image.isEmpty()) {
                 try {
-                    // Update image bytes in database
-                    existing.setImage(image.getBytes());
+                    // Upload new image to Cloudinary
+                    Map<String, Object> uploadResult = cloudinary.uploader().upload(
+                        image.getBytes(),
+                        ObjectUtils.asMap(
+                            "folder", "blog-images",
+                            "public_id", "blog_" + System.currentTimeMillis(),
+                            "resource_type", "auto"
+                        )
+                    );
+                    
+                    // Set new Cloudinary URL
+                    String imageUrl = (String) uploadResult.get("secure_url");
+                    existing.setImageUrl(imageUrl);
                     existing.setImageType(image.getContentType());
                     
-                    // Also save new image to filesystem
-                    String imagePath = saveImage(image);
-                    existing.setImageUrl(imagePath);
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to process image: " + e.getMessage(), e);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to upload image to Cloudinary: " + e.getMessage(), e);
                 }
             }
 
@@ -94,18 +112,6 @@ public class BlogService {
             return true;
         } else {
             throw new Exception("Blog not found with id: " + id);
-        }
-    }
-
-    private String saveImage(MultipartFile image) {
-        try {
-            Files.createDirectories(Paths.get(uploadDir));
-            String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir, fileName);
-            Files.write(filePath, image.getBytes());
-            return "/uploads/blog-images/" + fileName; // returned as public URL path
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to save image", e);
         }
     }
 

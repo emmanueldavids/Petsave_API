@@ -21,19 +21,15 @@ public class Blog {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Lob
-    @Column(length = 1000000) // For large images
-    private byte[] image;
-
     private LocalDateTime createdAt;
 
     public Blog() {}
 
-    public Blog(String title, String content, String author, byte[] image, String imageType, LocalDateTime createdAt) {
+    public Blog(String title, String content, String author, String imageUrl, String imageType, LocalDateTime createdAt) {
         this.title = title;
         this.content = content;
         this.author = author;
-        this.image = image;
+        this.imageUrl = imageUrl;
         this.imageType = imageType;
         this.createdAt = createdAt;
     }
@@ -77,14 +73,6 @@ public class Blog {
 
     public void setImageType(String imageType) {
         this.imageType = imageType;
-    }
-
-    public byte[] getImage() {
-        return image;
-    }
-
-    public void setImage(byte[] image) {
-        this.image = image;
     }
 
     public LocalDateTime getCreatedAt() {

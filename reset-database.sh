@@ -2,75 +2,118 @@
 
 # PetSave API Database Reset Script
 # Usage: ./reset-database.sh
+# Preserves: khoswift@gmail.com (main user) and admin@petsave.com (admin)
 
 echo "🗄️  PetSave API Database Reset"
 echo "================================"
 
-# Check if database URL is set
-if [ -z "$DB_URL" ]; then
-    echo "❌ Error: DB_URL environment variable not set"
-    echo "Please set your database connection string:"
-    echo "export DB_URL=jdbc:postgresql://localhost:5432/petsaveDB"
+# Check if API is running
+echo "🔍 Checking API connection..."
+if ! curl -s "http://localhost:8080/api/test/health" > /dev/null 2>&1; then
+    echo "❌ Error: PetSave API is not running on http://localhost:8080"
+    echo "Please start your Spring Boot application first"
     exit 1
 fi
 
-# Extract connection details from DB_URL
-DB_HOST=$(echo $DB_URL | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
-DB_PORT=$(echo $DB_URL | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
-DB_NAME=$(echo $DB_URL | sed -n 's/.*\/\([^?]*\).*/\1/p')
+echo "✅ API is running"
 
-echo "📊 Database: $DB_NAME"
-echo "🌐 Host: $DB_HOST:$DB_PORT"
+# Get admin token for authentication
+echo ""
+echo "🔐 Getting admin authentication token..."
+ADMIN_RESPONSE=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"usernameOrEmail":"admin@petsave.com","password":"admin123"}')
 
-# Check if we can connect
-if ! psql -h localhost -p 5432 -U postgres -d petsaveDB -c "SELECT 1;" > /dev/null 2>&1; then
-    echo "❌ Error: Cannot connect to database"
-    echo "Please check your connection and credentials"
+if echo "$ADMIN_RESPONSE" | grep -q "error\|Error\|401"; then
+    echo "❌ Error: Could not authenticate as admin"
+    echo "Please ensure admin@petsave.com exists with password 'admin123'"
+    echo "Response: $ADMIN_RESPONSE"
     exit 1
 fi
 
-echo "✅ Connected to database"
+TOKEN=$(echo "$ADMIN_RESPONSE" | jq -r '.token // .access_token' 2>/dev/null)
+if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+    echo "❌ Error: Could not extract token from response"
+    echo "Response: $ADMIN_RESPONSE"
+    exit 1
+fi
 
-# Get current table counts
+echo "✅ Admin authentication successful"
+
+# Get current database statistics
 echo ""
 echo "📋 Current Database Status:"
-psql -h localhost -p 5432 -U postgres -d petsaveDB -c "
-SELECT 
-    table_name as \"Table\", 
-    (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = t.table_name) as \"Columns\"
-FROM information_schema.tables t 
-WHERE table_schema = 'public' 
-ORDER BY table_name;" 2>/dev/null || echo "No tables found"
+STATS_RESPONSE=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/admin/database/stats)
 
-# Clear data if tables exist
-echo ""
-echo "🧹 Clearing existing data..."
+if echo "$STATS_RESPONSE" | grep -q "success.*true"; then
+    echo "📊 Current statistics:"
+    echo "$STATS_RESPONSE" | jq -r '.stats | to_entries[] | "  \(.key): \(.value)"' 2>/dev/null || echo "  Could not parse statistics"
+else
+    echo "⚠️  Could not get current statistics"
+fi
 
-# Check if tables exist and clear them
-TABLES=("users" "adoptions" "donations")
+# Confirm before proceeding
+echo ""
+echo "⚠️  WARNING: This will delete ALL data except:"
+echo "   📧 khoswift@gmail.com (main user)"
+echo "   👤 admin@petsave.com (admin account)"
+echo ""
+read -p "Are you sure you want to continue? (type 'yes' to confirm): " confirm
 
-for table in "${TABLES[@]}"; do
-    if psql -h localhost -p 5432 -U postgres -d petsaveDB -c "\dt $table" 2>/dev/null | grep -q "$table"; then
-        echo "  🗑️  Clearing table: $table"
-        psql -h localhost -p 5432 -U postgres -d petsaveDB -c "DELETE FROM $table;" 2>/dev/null
-        
-        # Reset sequence if it exists
-        seq_name="${table}_id_seq"
-        if psql -h localhost -p 5432 -U postgres -d petsaveDB -c "\d $seq_name" 2>/dev/null | grep -q "Sequence"; then
-            psql -h localhost -p 5432 -U postgres -d petsaveDB -c "ALTER SEQUENCE $seq_name RESTART WITH 1;" 2>/dev/null
-            echo "  🔄 Reset sequence: $seq_name"
-        fi
-    else
-        echo "  ⚠️  Table $table does not exist"
-    fi
-done
+if [ "$confirm" != "yes" ]; then
+    echo "❌ Database reset cancelled"
+    exit 1
+fi
+
+# Perform database cleanup
+echo ""
+echo "🧹 Performing database cleanup..."
+CLEANUP_RESPONSE=$(curl -s -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:8080/api/admin/database/cleanup)
+
+if echo "$CLEANUP_RESPONSE" | grep -q "success.*true"; then
+    echo "✅ Database cleanup completed successfully!"
+    echo ""
+    echo "📊 Cleanup Summary:"
+    
+    # Display before/after statistics
+    echo "$CLEANUP_RESPONSE" | jq -r '
+        if .before and .after then
+            "  Before cleanup:"
+            | .before | to_entries[] | "    \(.key): \(.value)"
+            | "  After cleanup:"
+            | .after | to_entries[] | "    \(.key): \(.value)"
+        else
+            "  Statistics not available"
+        end
+    ' 2>/dev/null || echo "  Could not parse cleanup statistics"
+    
+    echo ""
+    echo "� Preserved Accounts:"
+    echo "  📧 khoswift@gmail.com (main user)"
+    echo "  👤 admin@petsave.com (admin account)"
+    
+else
+    echo "❌ Error: Database cleanup failed"
+    echo "Response: $CLEANUP_RESPONSE"
+    exit 1
+fi
 
 echo ""
-echo "✅ Database reset complete!"
+echo "🎉 Database reset complete!"
 echo ""
-echo "🚀 Your PetSave API is now ready for a fresh start!"
+echo "� What was preserved:"
+echo "   ✅ Admin login credentials"
+echo "   ✅ User login credentials"
+echo "   ✅ Account verification status"
 echo ""
-echo "📝 Next steps:"
-echo "   1. Start your Spring Boot application"
-echo "   2. Register a new admin user"
-echo "   3. Test your API endpoints"
+echo "📝 What was deleted:"
+echo "   🗑️  All pets and their data"
+echo "   🗑️  All adoption applications"
+echo "   🗑️  All donation records"
+echo "   🗑️  All other user accounts"
+echo ""
+echo "🚀 Your PetSave API is now ready for fresh testing!"

@@ -2,9 +2,11 @@ package com.petsave.petsave.Controller;
 
 import com.petsave.petsave.Service.DonationService;
 import com.petsave.petsave.Service.PaymentService;
+import com.petsave.petsave.Service.NewDonationService;
 import com.petsave.petsave.Utils.JwtUtil;
 import com.petsave.petsave.dto.DonationRequest;
 import com.petsave.petsave.dto.DonationResponse;
+import com.petsave.petsave.dto.PaymentResponse;
 import com.petsave.petsave.dto.UserDto;
 import com.petsave.petsave.Entity.PaymentStatus;
 import com.petsave.petsave.Entity.Donation;
@@ -35,6 +37,8 @@ public class DonationController {
     private PaymentService paymentService;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private NewDonationService newDonationService;
 
     // Helper method to convert Donation to DonationResponse
     private DonationResponse convertToDonationResponse(Donation donation) {
@@ -113,8 +117,22 @@ public class DonationController {
         Authentication auth // Injected here
     ) {
         try {
-            String redirectUrl = donationService.initializePayment(donationRequest, auth);
-            return ResponseEntity.ok(Map.of("redirectUrl", redirectUrl));
+            log.info("Initializing payment with real Paystack integration for: {}", donationRequest.getEmail());
+            
+            // Use NewDonationService for real Paystack integration
+            PaymentResponse paymentResponse = newDonationService.initializePayment(donationRequest, auth);
+            
+            if (paymentResponse.isSuccess()) {
+                return ResponseEntity.ok(Map.of(
+                    "redirectUrl", paymentResponse.getAuthorizationUrl(),
+                    "reference", paymentResponse.getReference(),
+                    "accessCode", paymentResponse.getAccessCode()
+                ));
+            } else {
+                return ResponseEntity.status(500)
+                    .body(Map.of("message", "Payment initialization failed: " + paymentResponse.getMessage()));
+            }
+            
         } catch (Exception e) {
             log.error("Payment initialization failed: {}", e.getMessage(), e);
             return ResponseEntity.status(500)
