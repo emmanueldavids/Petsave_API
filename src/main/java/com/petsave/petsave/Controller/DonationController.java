@@ -5,6 +5,10 @@ import com.petsave.petsave.Service.PaymentService;
 import com.petsave.petsave.Utils.JwtUtil;
 import com.petsave.petsave.dto.DonationRequest;
 import com.petsave.petsave.dto.DonationResponse;
+import com.petsave.petsave.dto.UserDto;
+import com.petsave.petsave.Entity.PaymentStatus;
+import com.petsave.petsave.Entity.Donation;
+import com.petsave.petsave.Repository.DonationRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +36,21 @@ public class DonationController {
     @Autowired
     private JwtUtil jwtUtil;
 
-
+    // Helper method to convert Donation to DonationResponse
+    private DonationResponse convertToDonationResponse(Donation donation) {
+        DonationResponse response = new DonationResponse();
+        response.setId(donation.getId());
+        response.setDonorName(donation.getDonorName());
+        response.setEmail(donation.getEmail());
+        response.setAmount(donation.getAmount());
+        response.setDate(donation.getDate());
+        response.setGender(donation.getGender());
+        response.setCountry(donation.getCountry());
+        response.setPaymentStatus(donation.getPaymentStatus());
+        response.setReference(donation.getReference());
+        
+        return response;
+    }
 
     @GetMapping
     public Page<DonationResponse> getAllDonations(
@@ -114,13 +132,31 @@ public class DonationController {
 
     // New endpoint for pet-specific donations
     @PostMapping("/pet/{petId}")
-    public ResponseEntity<Map<String, String>> donateToPet(
-        @PathVariable Long petId,
-        @RequestBody DonationRequest donationRequest,
-        Authentication auth
-    ) {
-        donationService.createPetDonation(donationRequest, petId, auth);
-        return ResponseEntity.ok(Map.of("message", "Donation initiated for pet"));
+    public ResponseEntity<DonationResponse> donateToPet(
+            @PathVariable Long petId,
+            @RequestBody DonationRequest donationRequest) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Donation donation = donationService.createPetDonation(donationRequest, petId, auth);
+            DonationResponse response = convertToDonationResponse(donation);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error donating to pet {}: {}", petId, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Development-only endpoint to manually complete donations
+    @PostMapping("/complete/{reference}")
+    public ResponseEntity<String> completeDonation(@PathVariable String reference) {
+        try {
+            donationService.handlePaymentSuccess(reference);
+            log.info("Manually completed donation: {}", reference);
+            return ResponseEntity.ok("Donation completed successfully");
+        } catch (Exception e) {
+            log.error("Error completing donation {}: {}", reference, e.getMessage());
+            return ResponseEntity.badRequest().body("Error completing donation: " + e.getMessage());
+        }
     }
 
     // Test endpoint for Paystack integration

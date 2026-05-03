@@ -48,6 +48,38 @@ public class NewDonationController {
             
             if (response.isSuccess()) {
                 log.info("Donation initialized successfully: {}", response.getReference());
+                
+                // Send immediate donation confirmation email (like adoption emails)
+                try {
+                    // Convert amount from cents/kobo to dollars if needed
+                    double amountInDollars = donationRequest.getAmount();
+                    if (amountInDollars > 1000) {
+                        // Likely in cents/kobo, convert to dollars
+                        amountInDollars = amountInDollars / 100.0;
+                    }
+                    
+                    emailService.sendPaymentConfirmationEmail(
+                        donationRequest.getEmail(),
+                        donationRequest.getDonorName(),
+                        amountInDollars,
+                        response.getReference()
+                    );
+                    
+                    // Also send admin notification
+                    emailService.sendAdminDonationNotification(
+                        donationRequest.getDonorName(),
+                        donationRequest.getEmail(),
+                        amountInDollars,
+                        response.getReference()
+                    );
+                    
+                    log.info("Immediate donation confirmation email sent to: {}", donationRequest.getEmail());
+                    log.info("Admin notification sent for donation: {}", response.getReference());
+                } catch (Exception e) {
+                    log.error("Failed to send immediate donation email to {}: {}", donationRequest.getEmail(), e.getMessage());
+                    // Don't fail the donation initialization if email fails
+                }
+                
                 return ResponseEntity.ok(response);
             } else {
                 log.error("Donation initialization failed: {}", response.getMessage());

@@ -26,6 +26,7 @@ public class AdoptionService {
     private final AdoptionRepository adoptionRepository;
     private final UserRepository userRepository;
     private final PetRepository petRepository;
+    private final AdoptionEmailService adoptionEmailService;
 
     public Adoption createAdoption(Adoption adoption, Long userId) {
         User user = userRepository.findById(userId)
@@ -40,6 +41,15 @@ public class AdoptionService {
             pet.setStatus(PetStatus.PENDING_ADOPTION);
             pet.setAvailable(false);
             petRepository.save(pet);
+            
+            // Send email notifications
+            try {
+                adoptionEmailService.sendApplicationReceivedEmail(adoption, pet);
+                adoptionEmailService.sendNewApplicationAdminEmail(adoption, pet);
+            } catch (Exception e) {
+                // Log error but don't fail the adoption creation
+                System.err.println("Error sending adoption emails: " + e.getMessage());
+            }
         }
         
         return adoptionRepository.save(adoption);
@@ -105,6 +115,33 @@ public class AdoptionService {
                     break;
             }
             petRepository.save(pet);
+            
+            // Send email notifications based on status
+            try {
+                switch (status) {
+                    case APPROVED:
+                        adoptionEmailService.sendApplicationApprovedEmail(adoption, pet);
+                        adoptionEmailService.sendApplicationApprovedAdminEmail(adoption, pet);
+                        break;
+                    case REJECTED:
+                        adoptionEmailService.sendApplicationRejectedEmail(adoption, pet, "Application does not meet requirements");
+                        adoptionEmailService.sendApplicationRejectedAdminEmail(adoption, pet, "Application does not meet requirements");
+                        break;
+                    case COMPLETED:
+                        adoptionEmailService.sendAdoptionCompletedEmail(adoption, pet);
+                        adoptionEmailService.sendAdoptionCompletedAdminEmail(adoption, pet);
+                        break;
+                    case CANCELLED:
+                        // No email notifications for cancelled applications
+                        break;
+                    case PENDING:
+                        // No email notifications for pending status (already sent on creation)
+                        break;
+                }
+            } catch (Exception e) {
+                // Log error but don't fail the status update
+                System.err.println("Error sending adoption status emails: " + e.getMessage());
+            }
         }
         
         return adoptionRepository.save(adoption);

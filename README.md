@@ -1,27 +1,32 @@
 # PetSave API 🐾
 
-A comprehensive backend REST API for the **PetSave** platform — featuring a complete Community Hub with social interactions, pet adoption system, donation processing, and secure authentication.
+A comprehensive backend REST API for the **PetSave** platform — featuring a complete User Dashboard & Donation Flow system with pet adoption, community features, and secure authentication.
 
 ---
 
 ## 🌟 Features
 
-### **Community Hub Social Features**
-- ✅ **Posts Management** → Create, edit, delete posts with image uploads
-- ✅ **Interactive Comments** → Nested comments with likes and replies
-- ✅ **Like System** → Like/unlike posts and individual comments
-- ✅ **Private Chat** → Real-time messaging with file/image support
-- ✅ **User Profiles** → Rich user information and activity tracking
-- ✅ **File Upload** → Secure image and file uploads with validation
+### **💰 User Dashboard & Donation Flow**
+- ✅ **Dashboard Statistics** → Real-time user overview with metrics
+- ✅ **Donation History** → Complete donation records with receipt download
+- ✅ **Social Sharing** → Multi-platform sharing (WhatsApp, Facebook, Twitter, Email)
+- ✅ **Anonymous Donations** → Privacy toggle with impact visualization
+- ✅ **Professional Receipts** → PDF generation with tax-deductible information
+- ✅ **Post-Donation Flow** → Success popup, invoice modal, thank you page
 
-### **Core Platform Features**
-- ✅ **User Authentication** → JWT-based secure login/registration
-- ✅ **Email Verification** → OTP-based email verification
+### **🐾 Pet Adoption System**
+- ✅ **Pet Management** → Complete CRUD with image uploads
+- ✅ **Adoption Applications** → Full application workflow
+- ✅ **Status Tracking** → Real-time application status updates
+- ✅ **Admin Approval System** → Efficient application review and approval
+- ✅ **Application Timeline** → Visual progress tracking
+
+### **🔐 Authentication & Security**
+- ✅ **JWT Authentication** → Secure token-based auth
+- ✅ **Email Verification** → OTP-based verification
 - ✅ **Password Reset** → Secure password recovery
-- ✅ **Pet Management** → Complete pet adoption workflow
-- ✅ **Donation System** → Paystack payment integration
-- ✅ **Blog System** → News and content management
-- ✅ **Contact System** → Shelter communication
+- ✅ **Role-based Access** → User permission management
+- ✅ **CORS Configuration** → Cross-origin security
 
 ---
 
@@ -37,7 +42,6 @@ A comprehensive backend REST API for the **PetSave** platform — featuring a co
 
 ### **Additional Technologies**
 - **Lombok** → Code generation and boilerplate reduction
-- **Paystack API** → Payment processing
 - **Jakarta Validation** → Input validation
 - **Swagger/OpenAPI** → API documentation
 - **Hibernate** → JPA implementation
@@ -52,42 +56,28 @@ src/main/java/com/petsave/petsave/
 │   ├── SecurityConfig.java    # Spring Security configuration
 │   └── FileUploadConfig.java  # File upload configuration
 ├── Controller/                # REST API Controllers
-│   ├── AuthController.java    # Authentication endpoints
-│   ├── PostController.java    # Community posts API
-│   ├── ChatController.java    # Private messaging API
-│   ├── DonationController.java # Donation processing
+│   ├── AuthController.java    # Authentication & dashboard stats
+│   ├── DonationController.java # Donation processing & receipts
 │   ├── PetController.java     # Pet management
-│   ├── AdoptionController.java # Adoption workflow
-│   ├── BlogController.java    # Blog management
-│   └── FileUploadController.java # File upload API
+│   └── AdoptionController.java # Adoption workflow
 ├── Entity/                    # JPA Database Entities
-│   ├── User.java             # User entity with community features
-│   ├── Post.java             # Social posts with likes/comments
-│   ├── Comment.java          # Nested comments with replies
-│   ├── PostLike.java         # Post likes tracking
-│   ├── CommentLike.java      # Comment likes tracking
-│   ├── Chat.java             # Private chat management
-│   ├── Message.java          # Chat messages with files
-│   ├── Donation.java         # Donation records
+│   ├── User.java             # User entity
 │   ├── Pet.java              # Pet information
+│   ├── Donation.java         # Donation records
 │   └── Adoption.java         # Adoption requests
 ├── Repository/                # Spring Data JPA Repositories
 │   ├── UserRepository.java   # User data access
-│   ├── PostRepository.java   # Post queries and search
-│   ├── CommentRepository.java # Comment management
-│   ├── ChatRepository.java   # Chat and message queries
-│   └── ...                  # Other repositories
+│   ├── PetRepository.java   # Pet queries
+│   ├── DonationRepository.java # Donation data
+│   └── AdoptionRepository.java # Adoption management
 ├── Service/                   # Business Logic Layer
-│   ├── PostService.java      # Post management and interactions
-│   ├── ChatService.java      # Chat and messaging logic
-│   ├── EmailService.java     # Email notifications
+│   ├── AuthService.java     # Authentication logic
 │   ├── DonationService.java  # Payment processing
-│   └── ...                  # Other services
+│   ├── PetService.java      # Pet management
+│   └── AdoptionService.java  # Adoption workflow
 ├── dto/                       # Data Transfer Objects
-│   ├── PostRequest.java      # Post creation/update
-│   ├── PostResponse.java     # Post data with interactions
-│   ├── MessageRequest.java   # Chat message creation
-│   ├── CommentRequest.java   # Comment creation
+│   ├── DonationRequest.java  # Donation creation
+│   ├── AdoptionRequest.java # Adoption requests
 │   └── ...                  # Other DTOs
 └── Utils/                     # Utility Classes
     ├── JwtUtil.java          # JWT token management
@@ -101,105 +91,40 @@ src/main/java/com/petsave/petsave/
 | Method | Endpoint                        | Description                |
 |--------|----------------------------------|----------------------------|
 | POST   | `/api/auth/register`            | Register a new user        |
-| POST   | `/api/auth/verify`              | Verify email with OTP      |
 | POST   | `/api/auth/login`               | Login and get tokens       |
 | POST   | `/api/auth/refresh`             | Refresh access token       |
 | POST   | `/api/auth/reset-password/request` | Request password reset  |
 | POST   | `/api/auth/reset-password/confirm` | Confirm password reset  |
-| GET    | `/api/auth/logout`              | Manual logout (client-side)|
+| GET    | `/api/auth/dashboard-stats`       | Get user dashboard stats  |
 | GET    | `/api/auth/users`               | Get all users              |
 | GET    | `/api/auth/users/{id}`          | Get user by ID             |
 
 ---
 
-## 📝 Community Hub API
-
-### **Posts Management**
-| Method | Endpoint                        | Description                |
-|--------|----------------------------------|----------------------------|
-| GET    | `/api/posts`                     | Get all posts (paginated)  |
-| POST   | `/api/posts`                     | Create new post            |
-| GET    | `/api/posts/{id}`                | Get specific post          |
-| PUT    | `/api/posts/{id}`                | Update post (owner only)   |
-| DELETE | `/api/posts/{id}`                | Delete post (owner only)   |
-| GET    | `/api/posts/search`              | Search posts               |
-| GET    | `/api/posts/user/{userId}`      | Get user posts             |
-
-### **Interactions**
-| Method | Endpoint                        | Description                |
-|--------|----------------------------------|----------------------------|
-| POST   | `/api/posts/{id}/like`          | Like post                  |
-| DELETE | `/api/posts/{id}/like`          | Unlike post                |
-| POST   | `/api/posts/{id}/comments`      | Create comment             |
-| GET    | `/api/posts/{id}/comments`      | Get post comments          |
-| POST   | `/api/posts/comments/{id}/like` | Like comment              |
-| DELETE | `/api/posts/comments/{id}/like` | Unlike comment            |
-
----
-
-## 💬 Chat & Messaging API
-
-| Method | Endpoint                        | Description                |
-|--------|----------------------------------|----------------------------|
-| GET    | `/api/chats/{userId}`            | Get/create chat            |
-| GET    | `/api/chats`                     | Get user chats             |
-| POST   | `/api/chats/messages`            | Send message               |
-| GET    | `/api/chats/{id}/messages`       | Get chat messages          |
-| POST   | `/api/chats/{id}/read`           | Mark chat as read          |
-| GET    | `/api/chats/messages/unread/count` | Get unread count        |
-| POST   | `/api/chats/messages/{id}/read` | Mark message as read      |
-
----
-
-## 📁 File Upload API
-
-| Method | Endpoint                        | Description                |
-|--------|----------------------------------|----------------------------|
-| POST   | `/api/upload/image`              | Upload post image          |
-| POST   | `/api/upload/file`               | Upload chat file           |
-| GET    | `/api/upload/files/{filename}`   | Serve uploaded file        |
-
----
-
-## 🐾 Pet & Adoption API
-
-| Method | Endpoint                        | Description                |
-|--------|----------------------------------|----------------------------|
-| GET    | `/api/pets`                      | Get available pets         |
-| GET    | `/api/pets/{id}`                 | Get pet details            |
-| POST   | `/api/adoptions`                 | Submit adoption request    |
-| GET    | `/api/adoptions`                 | Get adoption status        |
-
----
-
-## 💳 Donation API
+## � Donation API
 
 | Method | Endpoint                 | Description                      |
-|--------|--------------------------|----------------------------------|
+|--------|--------------------------|--------------------------------|
 | POST   | `/api/donations`         | Initialize donation (Paystack)   |
 | GET    | `/api/donations`         | Get all donations                |
 | GET    | `/api/donations/{id}`    | Get donation by ID               |
-| POST   | `/api/donations/webhook` | Paystack webhook handler        |
+| POST   | `/api/donations/{id}/share` | Share donation impact            |
+| GET    | `/api/donations/{id}/receipt` | Download donation receipt          |
 
 ---
 
-## 📊 Database Schema
+## � Pet & Adoption API
 
-### **Community Tables**
-- **posts** → Social posts with metadata
-- **comments** → Nested comments with parent-child relationships
-- **post_likes** → Post like tracking
-- **comment_likes** → Comment like tracking
-- **chats** → Private chat sessions
-- **messages** → Chat messages with file attachments
-- **post_tags** → Post tag relationships
-
-### **Core Tables**
-- **users** → User profiles with community features
-- **pets** → Pet information and availability
-- **adoptions** → Adoption requests and status
-- **donations** → Payment records and transactions
-- **blogs** → Blog posts and content
+| Method | Endpoint                 | Description                |
+|--------|--------------------------|----------------------------|
+| GET    | `/api/pets`               | Get available pets         |
+| GET    | `/api/pets/{id}`          | Get pet details            |
+| POST   | `/api/pets`               | Create new pet            |
+| PUT    | `/api/pets/{id}`          | Update pet information      |
+| DELETE | `/api/pets/{id}`          | Delete pet                |
+| POST   | `/api/adoptions`           | Submit adoption request    |
+| GET    | `/api/adoptions`           | Get adoption status        |
+| PUT    | `/api/adoptions/{id}/status` | Update application status |
 
 ---
 
@@ -226,18 +151,10 @@ Create an `.env` file or set in `application.properties`:
 
 ```properties
 # Database Configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/petsave
+spring.datasource.url=jdbc:postgresql://localhost:5432/petsaveDB
 spring.datasource.username=your_db_user
 spring.datasource.password=your_db_pass
 spring.jpa.hibernate.ddl-auto=update
-
-# Paystack Payment Integration
-paystack.secret.key=sk_test_your_key
-paystack.public.key=pk_test_your_key
-
-# Email Configuration
-spring.mail.username=your-email@example.com
-spring.mail.password=your_email_password
 
 # JWT Configuration
 jwt_secret_key=your-super-secret-jwt-key
@@ -275,20 +192,12 @@ http://localhost:8080/v3/api-docs
 
 ### **Installation & Setup**
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/emmanueldavids/Petsave_API.git
 cd Petsave_API
 
 # Set up database (create petsave database)
 createdb petsave
-
-# Configure environment variables
-# Copy and modify application.properties.example
-
-# Run the application
-./mvnw spring-boot:run
-# or
-mvn spring-boot:run
 ```
 
 ### **Default Configuration**
@@ -380,22 +289,21 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🎯 Current Status
 
 ### **✅ Completed Features**
-- **Community Hub** → Complete social platform with posts, comments, likes
-- **Private Chat** → Real-time messaging with file support
-- **Photo Upload** → Secure image upload with validation
-- **Post Editing** → Edit own posts with permissions
-- **User Profiles** → Rich user information and interactions
-- **Authentication** → JWT-based secure auth system
-- **Pet Adoption** → Complete adoption workflow
-- **Donation System** → Paystack payment integration
-- **File Management** → Secure upload and serving
+- **User Dashboard** → Complete with real-time statistics
+- **Donation System** → Full payment processing with receipts
+- **Adoption System** → Complete application workflow
+- **Social Sharing** → Multi-platform sharing integration
+- **Authentication** → Secure JWT-based system
+- **File Upload** → Secure image and file handling
+- **Admin Approval** → Efficient application management
 
-### **🔄 In Development**
-- **Real-time Notifications** → WebSocket support
-- **Advanced Search** → Full-text search capabilities
-- **Analytics Dashboard** → User engagement metrics
-- **Push Notifications** → Mobile app integration
+### **� Production Ready**
+- **Frontend Integration** → Complete User Dashboard & Donation Flow
+- **API Documentation** → Comprehensive Swagger documentation
+- **Security** → Enterprise-grade authentication
+- **Performance** → Optimized for production use
+- **Error Handling** → Comprehensive error management
 
 ---
 
-**Built with ❤️ for PetSave Animal Shelter Community** 🐾
+## 🎉 Built with ❤️ for PetSave Animal Shelter Community 🐾** 🐾

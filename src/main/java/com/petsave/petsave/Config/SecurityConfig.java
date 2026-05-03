@@ -56,6 +56,8 @@ public class SecurityConfig {
                     "/uploads/pet-images/**",
                     "/uploads/image/**",
                     "/api/upload/**",
+                    "/api/users/count",
+                    "/api/users/all",
                     "/error"
                 ).permitAll()
                 .anyRequest().authenticated()

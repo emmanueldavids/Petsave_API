@@ -28,6 +28,9 @@ import java.util.*;
 @Slf4j
 public class DonationService {
 
+    @Value("${spring.profiles.active:default}")
+    private String activeProfile;
+
     @Value("${paystack.secret.key}")
     private String PAYSTACK_SECRET;
     
@@ -36,10 +39,13 @@ public class DonationService {
 
     private final DonationRepository donationRepository;
     private final PetRepository petRepository;
+    private final DonationEmailService donationEmailService;
 
-    public DonationService(DonationRepository donationRepository, PetRepository petRepository, WebClient.Builder webClientBuilder) {
+    public DonationService(DonationRepository donationRepository, PetRepository petRepository, 
+                       DonationEmailService donationEmailService, WebClient.Builder webClientBuilder) {
         this.donationRepository = donationRepository;
         this.petRepository = petRepository;
+        this.donationEmailService = donationEmailService;
         this.webClient = webClientBuilder.build();
     }
 
@@ -157,6 +163,20 @@ public class DonationService {
             donation.setDate(LocalDateTime.now());
             donation.setReference(reference);
             donation.setPaymentStatus(PaymentStatus.PENDING);
+            
+            // Auto-complete donations in development for testing
+            // In development, auto-complete donations after 5 seconds
+            // This simulates successful payment for testing
+            new Thread(() -> {
+                try {
+                    Thread.sleep(5000); // Wait 5 seconds
+                    donation.setPaymentStatus(PaymentStatus.COMPLETED);
+                    donationRepository.save(donation);
+                    log.info("Auto-completed donation in development: {}", reference);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }).start();
 
             // ✅ Get authenticated user
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
@@ -208,7 +228,31 @@ public class DonationService {
             }
         }
         
-        return donationRepository.save(donation);
+        Donation savedDonation = donationRepository.save(donation);
+        
+        // Send donation confirmation email
+        try {
+            donationEmailService.sendDonationConfirmation(
+                donation.getEmail(),
+                donation.getDonorName(),
+                donation.getAmount().doubleValue(),
+                donation.getReference()
+            );
+            
+            // Also notify admin about the donation
+            donationEmailService.notifyAdminAboutDonation(
+                donation.getEmail(),
+                donation.getDonorName(),
+                donation.getAmount().doubleValue(),
+                donation.getReference()
+            );
+            
+            log.info("Donation confirmation emails sent for donation: {}", donation.getReference());
+        } catch (Exception e) {
+            log.error("Failed to send donation confirmation emails: {}", e.getMessage(), e);
+        }
+        
+        return savedDonation;
     }
 
     // Method to create donation linked to a specific pet

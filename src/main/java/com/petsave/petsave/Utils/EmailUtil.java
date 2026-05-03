@@ -21,4 +21,12 @@ public class EmailUtil {
     public void sendWelcomeEmail(String to, String name) {
         asyncEmailService.sendWelcomeEmailAsync(to, name);
     }
+
+    public void sendEmail(String to, String subject, String content) {
+        asyncEmailService.sendGenericEmailAsync(to, subject, content);
+    }
+
+    public void sendDonationConfirmation(String to, String name, Double amount, String transactionId) {
+        asyncEmailService.sendDonationConfirmationAsync(to, name, amount, transactionId);
+    }
 }

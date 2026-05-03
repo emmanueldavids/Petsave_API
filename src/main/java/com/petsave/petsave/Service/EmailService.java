@@ -3,40 +3,66 @@ package com.petsave.petsave.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import jakarta.mail.internet.MimeMessage;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Value("${app.frontend.url:http://localhost:3001}")
+    private String frontendUrl;
+
+    @Value("${app.admin.email:admin@petsave.com}")
+    private String adminEmail;
+
     @Autowired
-    public EmailService(JavaMailSender mailSender) {
+    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
         this.mailSender = mailSender;
+        this.templateEngine = templateEngine;
     }
 
     public void sendPaymentConfirmationEmail(String toEmail, String donorName, 
                                            double amount, String reference) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(toEmail);
-            message.setSubject("Payment Confirmation - PetSave Donation");
+            Context context = new Context();
+            context.setVariable("donorName", donorName);
+            context.setVariable("amount", amount);
+            context.setVariable("reference", reference);
+            context.setVariable("donationDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
+            context.setVariable("frontendUrl", frontendUrl);
+
+            String subject = "Donation Confirmation - Thank You for Your Support! - PetSave";
+            String template = "donation-confirmation";
             
-            String emailBody = buildPaymentConfirmationEmail(donorName, amount, reference);
-            message.setText(emailBody);
+            String htmlContent = templateEngine.process(template, context);
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            log.info("Payment confirmation email sent successfully to: {}", toEmail);
+            log.info("Donation confirmation email sent successfully to: {}", toEmail);
             
         } catch (Exception e) {
-            log.error("Failed to send payment confirmation email to {}: {}", toEmail, e.getMessage(), e);
+            log.error("Failed to send donation confirmation email to {}: {}", toEmail, e.getMessage(), e);
         }
     }
 
@@ -44,13 +70,25 @@ public class EmailService {
                                        double amount, String reference, 
                                        String paymentDate) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(toEmail);
-            message.setSubject("Donation Receipt - PetSave");
+            Context context = new Context();
+            context.setVariable("donorName", donorName);
+            context.setVariable("amount", amount);
+            context.setVariable("reference", reference);
+            context.setVariable("paymentDate", paymentDate);
+            context.setVariable("frontendUrl", frontendUrl);
+
+            String subject = "Donation Receipt - PetSave";
+            String template = "donation-receipt";
             
-            String emailBody = buildDonationReceiptEmail(donorName, amount, reference, paymentDate);
-            message.setText(emailBody);
+            String htmlContent = templateEngine.process(template, context);
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
 
             mailSender.send(message);
             log.info("Donation receipt email sent successfully to: {}", toEmail);
@@ -60,61 +98,35 @@ public class EmailService {
         }
     }
 
-    private String buildPaymentConfirmationEmail(String donorName, double amount, String reference) {
-        return String.format("""
-            Dear %s,
-            
-            Thank you for your generous donation to PetSave!
-            
-            Payment Details:
-            - Amount: $%.2f
-            - Reference: %s
-            - Status: Successful
-            
-            Your contribution will help us rescue and care for more animals in need.
-            We will send you a detailed receipt shortly.
-            
-            Thank you for supporting our mission!
-            
-            Best regards,
-            The PetSave Team
-            
-            ---
-            PetSave - Saving Animals, Changing Lives
-            """, donorName, amount, reference);
-    }
+    public void sendAdminDonationNotification(String donorName, String donorEmail, 
+                                            double amount, String reference) {
+        try {
+            Context context = new Context();
+            context.setVariable("donorName", donorName);
+            context.setVariable("donorEmail", donorEmail);
+            context.setVariable("amount", amount);
+            context.setVariable("reference", reference);
+            context.setVariable("donationDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
+            context.setVariable("frontendUrl", frontendUrl);
 
-    private String buildDonationReceiptEmail(String donorName, double amount, 
-                                           String reference, String paymentDate) {
-        return String.format("""
-            Dear %s,
+            String subject = "New Donation Received - " + amount + " from " + donorName;
+            String template = "admin-donation-notification";
             
-            Your Donation Receipt from PetSave
+            String htmlContent = templateEngine.process(template, context);
             
-            Receipt Details:
-            - Donor Name: %s
-            - Donation Amount: $%.2f
-            - Transaction Reference: %s
-            - Payment Date: %s
-            - Status: Completed
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            Your generous donation will directly support:
-            - Animal rescue operations
-            - Medical care for rescued animals
-            - Food and shelter expenses
-            - Adoption programs
+            helper.setFrom(fromEmail);
+            helper.setTo(adminEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Admin donation notification sent successfully to: {}", adminEmail);
             
-            Thank you for being a hero to animals in need!
-            
-            For tax purposes, this email serves as your official donation receipt.
-            
-            With gratitude,
-            The PetSave Team
-            
-            ---
-            PetSave - Saving Animals, Changing Lives
-            Website: www.petsave.com
-            Email: info@petsave.com
-            """, donorName, donorName, amount, reference, paymentDate);
+        } catch (Exception e) {
+            log.error("Failed to send admin donation notification to {}: {}", adminEmail, e.getMessage(), e);
+        }
     }
 }

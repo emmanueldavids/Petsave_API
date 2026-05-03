@@ -9,21 +9,15 @@ import com.petsave.petsave.dto.PetResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +26,7 @@ import java.util.stream.Collectors;
 public class PetService {
 
     private final PetRepository petRepository;
-    private final String uploadDir = "uploads/pet-images/";
+    private final CloudinaryService cloudinaryService;
 
     // Create a new pet
     public Pet createPet(Pet pet) {
@@ -79,16 +73,13 @@ public class PetService {
         // Handle image upload
         if (image != null && !image.isEmpty()) {
             try {
-                // Temporarily disabled - LOB fields removed from entity
-                // pet.setImage(image.getBytes());
-                // pet.setImageType(image.getContentType());
-                
-                // Also save to filesystem for serving
-                String imagePath = saveImage(image);
-                pet.setImageUrl(imagePath);
-            } catch (IOException e) {
-                log.error("Failed to process image: {}", e.getMessage(), e);
-                throw new RuntimeException("Failed to process image: " + e.getMessage(), e);
+                // Upload to Cloudinary
+                String cloudinaryUrl = cloudinaryService.uploadPetImage(image);
+                pet.setImageUrl(cloudinaryUrl);
+                log.info("Image uploaded to Cloudinary: {}", cloudinaryUrl);
+            } catch (Exception e) {
+                log.error("Failed to upload image to Cloudinary: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to upload image: " + e.getMessage(), e);
             }
         }
         
@@ -97,25 +88,7 @@ public class PetService {
         return savedPet;
     }
 
-    private String saveImage(MultipartFile image) throws IOException {
-        try {
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-                log.info("Created upload directory: {}", uploadPath.toAbsolutePath());
-            }
-            
-            String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
-            Path filePath = uploadPath.resolve(fileName);
-            Files.write(filePath, image.getBytes());
-            log.info("Saved image to: {}", filePath.toAbsolutePath());
-            return "/uploads/pet-images/" + fileName; // returned as public URL path
-        } catch (IOException e) {
-            log.error("Failed to save image: {}", e.getMessage(), e);
-            throw new IOException("Failed to save image file: " + e.getMessage(), e);
-        }
-    }
-
+    
     // Helper method to convert Pet to PetResponse (excludes binary data)
     public PetResponse mapToResponse(Pet pet) {
         PetResponse response = new PetResponse();
@@ -190,18 +163,12 @@ public class PetService {
 
         if (image != null && !image.isEmpty()) {
             try {
-                if (existingPet.getImageUrl() != null) {
-                    String oldImagePath = existingPet.getImageUrl().replace("/uploads/", "");
-                    java.io.File oldImageFile = new java.io.File("uploads/" + oldImagePath);
-                    if (oldImageFile.exists()) {
-                        oldImageFile.delete();
-                    }
-                }
-
-                String imageUrl = uploadImage(image);
-                existingPet.setImageUrl(imageUrl);
+                // Upload new image to Cloudinary
+                String cloudinaryUrl = cloudinaryService.uploadPetImage(image);
+                existingPet.setImageUrl(cloudinaryUrl);
+                log.info("New image uploaded to Cloudinary: {}", cloudinaryUrl);
             } catch (Exception e) {
-                log.error("Error uploading image: {}", e.getMessage(), e);
+                log.error("Failed to upload image to Cloudinary: {}", e.getMessage(), e);
                 throw new RuntimeException("Failed to upload image: " + e.getMessage(), e);
             }
         }
@@ -212,25 +179,7 @@ public class PetService {
         return updatedPet;
     }
 
-    private String uploadImage(MultipartFile image) throws IOException {
-        try {
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-                log.info("Created upload directory: {}", uploadPath.toAbsolutePath());
-            }
-            
-            String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
-            Path filePath = uploadPath.resolve(fileName);
-            Files.write(filePath, image.getBytes());
-            log.info("Saved image to: {}", filePath.toAbsolutePath());
-            return "/uploads/pet-images/" + fileName; // returned as public URL path
-        } catch (IOException e) {
-            log.error("Failed to save image: {}", e.getMessage(), e);
-            throw new IOException("Failed to save image file: " + e.getMessage(), e);
-        }
-    }
-
+    
     private PetResponse convertToResponse(Pet pet) {
         PetResponse response = new PetResponse();
         response.setId(pet.getId());
@@ -282,7 +231,7 @@ public class PetService {
         return pet;
     }
 
-    // Update pet
+    // Update pet (for PUT - full replacement)
     public Pet updatePet(Long id, Pet petDetails) {
         log.info("Updating pet with ID: {}", id);
         
@@ -319,6 +268,46 @@ public class PetService {
 
         Pet updatedPet = petRepository.save(pet);
         log.info("Pet updated successfully: {}", updatedPet.getName());
+        return updatedPet;
+    }
+
+    // Partial update pet (for PATCH - selective field updates)
+    public Pet patchPet(Long id, Pet petDetails) {
+        log.info("Patching pet with ID: {}", id);
+        
+        Pet pet = petRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pet not found with id: " + id));
+
+        // Only update non-null fields to preserve existing data
+        if (petDetails.getName() != null) pet.setName(petDetails.getName());
+        if (petDetails.getBreed() != null) pet.setBreed(petDetails.getBreed());
+        if (petDetails.getAge() != null) pet.setAge(petDetails.getAge());
+        if (petDetails.getDescription() != null) pet.setDescription(petDetails.getDescription());
+        if (petDetails.getImageUrl() != null) pet.setImageUrl(petDetails.getImageUrl());
+        if (petDetails.getType() != null) pet.setType(petDetails.getType());
+        if (petDetails.getStatus() != null) pet.setStatus(petDetails.getStatus());
+        if (petDetails.getLocation() != null) pet.setLocation(petDetails.getLocation());
+        if (petDetails.getMedicalHistory() != null) pet.setMedicalHistory(petDetails.getMedicalHistory());
+        if (petDetails.getSpecialNeeds() != null) pet.setSpecialNeeds(petDetails.getSpecialNeeds());
+        if (petDetails.getAvailable() != null) pet.setAvailable(petDetails.getAvailable());
+        if (petDetails.getUploadedBy() != null) pet.setUploadedBy(petDetails.getUploadedBy());
+        if (petDetails.getRescueDate() != null) pet.setRescueDate(petDetails.getRescueDate());
+        if (petDetails.getAdoptionDate() != null) pet.setAdoptionDate(petDetails.getAdoptionDate());
+        if (petDetails.getAdoptionFee() != null) pet.setAdoptionFee(petDetails.getAdoptionFee());
+        if (petDetails.getStory() != null) pet.setStory(petDetails.getStory());
+        if (petDetails.getVaccinated() != null) pet.setVaccinated(petDetails.getVaccinated());
+        if (petDetails.getNeutered() != null) pet.setNeutered(petDetails.getNeutered());
+        if (petDetails.getHouseTrained() != null) pet.setHouseTrained(petDetails.getHouseTrained());
+        if (petDetails.getTemperament() != null) pet.setTemperament(petDetails.getTemperament());
+        if (petDetails.getGoodWith() != null) pet.setGoodWith(petDetails.getGoodWith());
+        if (petDetails.getWeight() != null) pet.setWeight(petDetails.getWeight());
+        if (petDetails.getColor() != null) pet.setColor(petDetails.getColor());
+        if (petDetails.getMicrochipId() != null) pet.setMicrochipId(petDetails.getMicrochipId());
+        if (petDetails.getRequiresExperienced() != null) pet.setRequiresExperienced(petDetails.getRequiresExperienced());
+        if (petDetails.getAdoptionRequirements() != null) pet.setAdoptionRequirements(petDetails.getAdoptionRequirements());
+
+        Pet updatedPet = petRepository.save(pet);
+        log.info("Pet patched successfully: {}", updatedPet.getName());
         return updatedPet;
     }
 

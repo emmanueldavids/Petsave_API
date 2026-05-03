@@ -116,8 +116,10 @@ public class AuthService {
     // ================= LOGIN =================
     public LoginResponse login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found. Please check your username or email."));
+        // Try to find user by username first, then by email
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseGet(() -> userRepository.findByEmail(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found. Please check your username or email.")));
 
         if (!user.isVerified()) {
             throw new RuntimeException("Please verify your email address before logging in. Check your inbox for the verification code.");
@@ -140,7 +142,7 @@ public class AuthService {
             user.getName(), 
             user.getUsername(), 
             user.getEmail(), 
-            "USER" // Default role for now
+            user.getRole() // Use actual role from user
         );
     }
 

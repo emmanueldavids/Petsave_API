@@ -91,6 +91,18 @@ public class PetController {
         }
     }
 
+    // Partial update pet (PATCH)
+    @PatchMapping("/{id}")
+    public ResponseEntity<Pet> patchPet(@PathVariable Long id, @RequestBody PetRequest request) {
+        Pet petDetails = convertToEntity(request);
+        try {
+            Pet updatedPet = petService.patchPet(id, petDetails);
+            return ResponseEntity.ok(updatedPet);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     // Update pet with image upload
     @PutMapping(value = "/{id}/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Pet> updatePetWithImage(

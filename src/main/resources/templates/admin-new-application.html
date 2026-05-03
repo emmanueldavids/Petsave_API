@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Adoption Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .info-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+        .urgent {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📋 New Adoption Application</h1>
+        <p>A new adoption application requires your review</p>
+    </div>
+    
+    <div class="content">
+        <div class="urgent">
+            <h3>⚠️ Action Required</h3>
+            <p>A new adoption application has been submitted and requires your review and approval.</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>👤 Applicant Information</h3>
+            <p><strong>Name:</strong> <span th:text="${adopterName}">Applicant Name</span></p>
+            <p><strong>Email:</strong> <span th:text="${adopterEmail}">email@example.com</span></p>
+            <p><strong>Phone:</strong> <span th:text="${adopterPhone}">555-123-4567</span></p>
+        </div>
+        
+        <div class="info-box">
+            <h3>🐕 Pet Information</h3>
+            <p><strong>Name:</strong> <span th:text="${petName}">Pet Name</span></p>
+            <p><strong>Type:</strong> <span th:text="${petType}">Pet Type</span></p>
+            <p><strong>Breed:</strong> <span th:text="${petBreed}">Pet Breed</span></p>
+            <p><strong>Age:</strong> <span th:text="${petAge}">Pet Age</span></p>
+        </div>
+        
+        <div class="info-box">
+            <h3>📋 Application Details</h3>
+            <p><strong>Application ID:</strong> <span th:text="${applicationId}">APP-123</span></p>
+            <p><strong>Submitted Date:</strong> <span th:text="${applicationDate}">2024-01-01</span></p>
+        </div>
+        
+        <h3>🔍 Review Checklist:</h3>
+        <ul>
+            <li>Verify applicant information and references</li>
+            <li>Check housing situation and pet policies</li>
+            <li>Review experience with pets</li>
+            <li>Assess compatibility with specific pet</li>
+            <li>Contact applicant for additional information if needed</li>
+        </ul>
+        
+        <h3>⏰ Timeline:</h3>
+        <ul>
+            <li>Standard review time: 2-3 business days</li>
+            <li>Applicant expects response within 5 business days</li>
+            <li>Urgent applications should be prioritized</li>
+        </ul>
+        
+        <a th:href="${adminUrl}" class="button">Review Application</a>
+        
+        <p>Please log into the admin dashboard to review this application and make a decision.</p>
+        
+        <p>If you have any questions or need assistance with this application, please contact the shelter management team.</p>
+        
+        <p>Thank you for your dedication to finding loving homes for our pets!</p>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; 2024 PetSave Admin System. All rights reserved.</p>
+        <p>This is an automated notification. Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

@@ -16,6 +16,8 @@ import jakarta.mail.util.ByteArrayDataSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
@@ -137,6 +139,56 @@ public class AsyncEmailService {
         } catch (Exception e) {
             // Log error but don't throw to prevent blocking
             System.err.println("Failed to send welcome email: " + e.getMessage());
+        }
+    }
+
+    @Async
+    public void sendGenericEmailAsync(String to, String subject, String content) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(to);
+            helper.setSubject(subject);
+            
+            // Embed logo
+            embedLogo(helper);
+            
+            helper.setText(content, true);
+            
+            mailSender.send(message);
+        } catch (Exception e) {
+            // Log error but don't throw to prevent blocking
+            System.err.println("Failed to send generic email: " + e.getMessage());
+        }
+    }
+
+    @Async
+    public void sendDonationConfirmationAsync(String to, String name, Double amount, String transactionId) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(to);
+            helper.setSubject("Donation Confirmation - Thank You for Your Support! - PetSave");
+            
+            // Embed logo
+            embedLogo(helper);
+            
+            Context context = new Context();
+            context.setVariable("donorName", name);
+            context.setVariable("donorEmail", to);
+            context.setVariable("amount", amount);
+            context.setVariable("transactionId", transactionId);
+            context.setVariable("donationDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
+            
+            String htmlContent = templateEngine.process("donation-confirmation", context);
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(message);
+        } catch (Exception e) {
+            // Log error but don't throw to prevent blocking
+            System.err.println("Failed to send donation confirmation email: " + e.getMessage());
         }
     }
 }

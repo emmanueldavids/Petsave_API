@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .donation-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💝 Donation Confirmation!</h1>
+        <p>Thank you for your generous support</p>
+    </div>
+    
+    <div class="content">
+        <p>Dear <strong th:text="${donorName}">Donor Name</strong>,</p>
+        
+        <p>Thank you for your generous donation to PetSave! Your contribution will make a significant difference in the lives of animals in need.</p>
+        
+        <div class="donation-info">
+            <h3>💰 Donation Details</h3>
+            <p><strong>Donor Name:</strong> <span th:text="${donorName}">Donor Name</span></p>
+            <p><strong>Donation Amount:</strong> <span class="amount">$<span th:text="${amount}">0.00</span></span></p>
+            <p><strong>Transaction Reference:</strong> <span th:text="${reference}">REF-123</span></p>
+            <p><strong>Donation Date:</strong> <span th:text="${donationDate}">2024-01-01</span></p>
+            <p><strong>Status:</strong> <strong style="color: #27ae60;">✅ Confirmed</strong></p>
+        </div>
+        
+        <div class="donation-info">
+            <h3>🐾 Your Impact</h3>
+            <p>Your generous donation of $<span th:text="${amount}">0.00</span> will help us:</p>
+            <ul>
+                <li>Provide food and medical care for rescued animals</li>
+                <li>Maintain our shelter facilities</li>
+                <li>Support adoption programs and events</li>
+                <li>Educate the community about animal welfare</li>
+            </ul>
+            <p>Every contribution makes a real difference in the lives of animals waiting for their forever homes.</p>
+        </div>
+        
+        <p><strong>What happens next?</strong></p>
+        <ul>
+            <li>You'll receive a detailed receipt for your records</li>
+            <li>We'll send updates on how your donation is making an impact</li>
+            <li>You're now part of the PetSave family of supporters!</li>
+        </ul>
+        
+        <p>You can track your donation history and see your impact by logging into your dashboard.</p>
+        
+        <a href="http://localhost:3000" class="button">View Your Dashboard</a>
+        
+        <p>If you have any questions about your donation, please don't hesitate to contact us.</p>
+        
+        <p>Thank you for being a hero to animals in need!</p>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; 2024 PetSave. All rights reserved.</p>
+        <p>This email was sent to [recipient email]. You received this email because you made a donation to PetSave.</p>
+    </div>
+</body>
+</html>
