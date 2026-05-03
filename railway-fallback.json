@@ -1,9 +1,14 @@
 {
   "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
+    "builder": "NIXPACKS",
+    "buildCommand": "mvn clean package spring-boot:repackage -DskipTests",
+    "watchPatterns": [
+      "src/**",
+      "pom.xml"
+    ]
   },
   "deploy": {
+    "startCommand": "java -jar target/petsave-0.0.1-SNAPSHOT.jar --spring.profiles.active=railway",
     "healthcheckPath": "/api/test/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",

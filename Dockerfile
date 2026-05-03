@@ -22,8 +22,8 @@ COPY --from=build /app/target/*.jar app.jar
 # Copy .env if needed
 COPY .env .env
 
-# Expose port
-EXPOSE 9001
+# Expose port (Railway uses port 8080)
+EXPOSE 8080
 
-# Run the jar file
-CMD ["java", "-jar", "app.jar"]
+# Run the jar file with Railway profile
+CMD ["java", "-jar", "app.jar", "--spring.profiles.active=railway"]
