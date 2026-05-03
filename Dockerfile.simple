@@ -1,0 +1,12 @@
+# Simple Dockerfile for Railway
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+
+# Copy the jar file (assuming it's already built)
+COPY target/*.jar app.jar
+
+# Expose port
+EXPOSE 8080
+
+# Run the application
+CMD ["java", "-jar", "app.jar", "--spring.profiles.active=railway", "--server.port=8080"]
