@@ -45,6 +45,7 @@ A comprehensive backend REST API for the **PetSave** platform — featuring a co
 - **Jakarta Validation** → Input validation
 - **Swagger/OpenAPI** → API documentation
 - **Hibernate** → JPA implementation
+- **Cloudinary** → Cloud image storage and processing
 
 ---
 
@@ -54,7 +55,9 @@ A comprehensive backend REST API for the **PetSave** platform — featuring a co
 src/main/java/com/petsave/petsave/
 ├── Config/                    # Security & Application Configs
 │   ├── SecurityConfig.java    # Spring Security configuration
-│   └── FileUploadConfig.java  # File upload configuration
+│   ├── FileUploadConfig.java  # File upload configuration
+│   ├── CloudinaryConfig.java  # Cloudinary image storage config
+│   └── WebSocketConfig.java   # WebSocket for real-time updates
 ├── Controller/                # REST API Controllers
 │   ├── AuthController.java    # Authentication & dashboard stats
 │   ├── DonationController.java # Donation processing & receipts
@@ -163,7 +166,73 @@ jwt_expiration=86400000
 # File Upload Configuration
 file.upload.dir=uploads
 file.upload.max-size=10485760
+
+# Cloudinary Configuration
+cloudinary.cloud.name=your-cloudinary-cloud-name
+cloudinary.api.key=your-cloudinary-api-key
+cloudinary.api.secret=your-cloudinary-api-secret
 ```
+
+---
+
+## 🌩️ Cloudinary Integration
+
+### **Image Storage & Processing**
+PetSave API integrates with Cloudinary for secure and scalable image storage, providing:
+- **✅ Pet Photo Uploads** → Automatic image optimization and resizing
+- **✅ CDN Delivery** → Fast image serving globally
+- **✅ Image Transformations** → Dynamic resizing and cropping
+- **✅ Secure Storage** → Cloud-based backup and redundancy
+
+### **Cloudinary Setup**
+
+#### **1. Create Cloudinary Account**
+1. Sign up at [Cloudinary](https://cloudinary.com/)
+2. Create a new account or use existing one
+3. Navigate to Dashboard → Account Details
+
+#### **2. Get Configuration Details**
+From your Cloudinary dashboard, you'll need:
+- **Cloud Name** → Your unique cloud identifier
+- **API Key** → Your public API key
+- **API Secret** → Your secret API key (keep secure!)
+
+#### **3. Configure Environment Variables**
+Add to your `.env` file or `application.properties`:
+
+```properties
+# Cloudinary Configuration
+cloudinary.cloud.name=your-cloudinary-cloud-name
+cloudinary.api.key=your-cloudinary-api-key
+cloudinary.api.secret=your-cloudinary-api-secret
+```
+
+#### **4. Usage Examples**
+
+**Upload Pet Image:**
+```java
+@Autowired
+private CloudinaryService cloudinaryService;
+
+// Upload pet photo
+String imageUrl = cloudinaryService.uploadImage(file, "pet_" + petId);
+```
+
+**Image Transformations:**
+```java
+// Get resized pet thumbnail
+String thumbnailUrl = cloudinaryService.getThumbnail(imageUrl, 300, 300);
+
+// Get optimized pet gallery image
+String galleryUrl = cloudinaryService.getOptimizedImage(imageUrl, 800, 600);
+```
+
+### **Features & Benefits**
+- **🚀 Fast Loading** → CDN-accelerated image delivery
+- **📱 Responsive** → Automatic image optimization for all devices
+- **🔒 Secure** → Signed URLs and access controls
+- **💰 Cost-Effective** → Pay only for storage and bandwidth used
+- **🎨 Transformations** → Dynamic resizing, cropping, and filters
 
 ---
 
