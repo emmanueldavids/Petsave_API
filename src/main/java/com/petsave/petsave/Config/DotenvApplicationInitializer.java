@@ -7,7 +7,12 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class DotenvApplicationInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     @Override
     public void initialize(ConfigurableApplicationContext context) {
-        Dotenv dotenv = Dotenv.configure().load();
+        // Dotenv dotenv = Dotenv.configure().load();
+
+        Dotenv dotenv = Dotenv.configure()
+        .ignoreIfMissing()
+        .ignoreIfMalformed()
+        .load();
 
         dotenv.entries().forEach(entry -> {
             System.setProperty(entry.getKey(), entry.getValue());
