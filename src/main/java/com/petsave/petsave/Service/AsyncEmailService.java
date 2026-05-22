@@ -1,6 +1,5 @@
 package com.petsave.petsave.Service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -20,11 +19,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
-@RequiredArgsConstructor
 public class AsyncEmailService {
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
+
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.username}")
+    private String fromEmail;
+
+    public AsyncEmailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
+        this.mailSender = mailSender;
+        this.templateEngine = templateEngine;
+    }
 
     private void embedLogo(MimeMessageHelper helper) throws Exception {
         // Try to load logo from different possible locations
@@ -64,7 +70,8 @@ public class AsyncEmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
+
+            helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject("PetSave - Email Verification");
             
@@ -92,7 +99,8 @@ public class AsyncEmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
+
+            helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject("PetSave - Password Reset");
             
@@ -120,7 +128,8 @@ public class AsyncEmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
+
+            helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject("Welcome to PetSave!");
             
@@ -147,7 +156,8 @@ public class AsyncEmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
+
+            helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject(subject);
             
@@ -168,7 +178,8 @@ public class AsyncEmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
+
+            helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject("Donation Confirmation - Thank You for Your Support! - PetSave");
             
