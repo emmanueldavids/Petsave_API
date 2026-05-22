@@ -50,9 +50,15 @@ public class AuthController {
         return authService.verifyOtp(request);
     }
 
-    @PostMapping("/resend")
-    public AuthResponse resend(@RequestParam String email) {
-        return authService.resendCode(email);
+    @PostMapping({"/resend", "/resend-otp"})
+    public AuthResponse resend(
+            @RequestParam(required = false) String email,
+            @RequestBody(required = false) Map<String, String> body) {
+        String resolvedEmail = (email != null) ? email : (body != null ? body.get("email") : null);
+        if (resolvedEmail == null || resolvedEmail.isBlank()) {
+            throw new RuntimeException("Email is required.");
+        }
+        return authService.resendCode(resolvedEmail);
     }
 
     @PostMapping("/login")
