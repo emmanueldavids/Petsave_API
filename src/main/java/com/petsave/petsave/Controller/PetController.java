@@ -25,7 +25,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/pets")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"}, allowCredentials = "true")
 public class PetController {
 
     private final PetService petService;

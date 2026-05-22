@@ -25,7 +25,6 @@ import java.util.HashMap;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.00.1:3001"}, allowCredentials = "true")
 public class AuthController {
 
     private final AuthService authService;

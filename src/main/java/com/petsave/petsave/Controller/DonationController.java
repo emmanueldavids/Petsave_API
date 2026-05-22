@@ -26,7 +26,6 @@ import org.springframework.security.core.Authentication;
 
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"}, allowCredentials = "true")
 @RequestMapping("/api/donations")
 @Slf4j
 public class DonationController {
