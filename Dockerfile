@@ -34,7 +34,7 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'echo "Files in app:"' >> /app/start.sh && \
     echo 'ls -la' >> /app/start.sh && \
     echo 'echo "PORT: ${PORT:-8080}"' >> /app/start.sh && \
-    echo 'exec java -Djava.security.egd=file:/dev/./urandom -jar app.jar --spring.profiles.active=railway --server.port=${PORT:-8080}' >> /app/start.sh && \
+    echo 'exec java -Djava.security.egd=file:/dev/./urandom -XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=30.0 -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -jar app.jar --spring.profiles.active=railway --server.port=${PORT:-8080}' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # Railway provides PORT dynamically
