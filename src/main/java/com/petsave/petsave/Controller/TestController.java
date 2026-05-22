@@ -23,6 +23,11 @@ public class TestController {
     @Value("${spring.mail.password}")
     private String mailPassword;
 
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of("status", "UP"));
+    }
+
     @PostMapping("/email")
     public ResponseEntity<Map<String, String>> testEmail() {
         Map<String, String> result = new HashMap<>();

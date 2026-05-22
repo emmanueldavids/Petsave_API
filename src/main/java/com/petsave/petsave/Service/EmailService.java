@@ -20,10 +20,10 @@ public class EmailService {
     private final TemplateEngine templateEngine;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${brevo.api.key}")
+    @Value("${brevo.api.key:}")
     private String brevoApiKey;
 
-    @Value("${brevo.from.email}")
+    @Value("${brevo.from.email:noreply@petsave.com}")
     private String fromEmail;
 
     @Value("${brevo.from.name:PetSave}")
