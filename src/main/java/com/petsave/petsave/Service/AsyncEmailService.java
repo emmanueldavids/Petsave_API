@@ -1,28 +1,34 @@
 package com.petsave.petsave.Service;
 
-import com.resend.Resend;
-import com.resend.services.emails.model.CreateEmailOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
 public class AsyncEmailService {
 
     private final TemplateEngine templateEngine;
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${resend.api.key}")
-    private String resendApiKey;
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
 
-    @Value("${resend.from.email}")
+    @Value("${brevo.from.email}")
     private String fromEmail;
+
+    @Value("${brevo.from.name:PetSave}")
+    private String fromName;
 
     @Value("${app.frontend.url:https://petsave-frontend.vercel.app}")
     private String frontendUrl;
@@ -33,14 +39,23 @@ public class AsyncEmailService {
 
     private void send(String to, String subject, String html) {
         try {
-            Resend resend = new Resend(resendApiKey);
-            CreateEmailOptions options = CreateEmailOptions.builder()
-                    .from(fromEmail)
-                    .to(to)
-                    .subject(subject)
-                    .html(html)
-                    .build();
-            resend.emails().send(options);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("api-key", brevoApiKey);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> body = Map.of(
+                "sender", Map.of("name", fromName, "email", fromEmail),
+                "to", List.of(Map.of("email", to)),
+                "subject", subject,
+                "htmlContent", html
+            );
+
+            restTemplate.postForEntity(
+                "https://api.brevo.com/v3/smtp/email",
+                new HttpEntity<>(body, headers),
+                String.class
+            );
+            log.info("Email sent to {} via Brevo: {}", to, subject);
         } catch (Exception e) {
             log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
         }
