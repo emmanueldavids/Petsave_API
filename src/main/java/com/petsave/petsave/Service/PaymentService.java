@@ -57,7 +57,10 @@ public class PaymentService {
             payload.put("email", donation.getEmail());
             payload.put("amount", (int) (donation.getAmount() * 100));
             payload.put("reference", reference);
-            payload.put("callback_url", "https://yourfrontend.com/payment/callback?ref=" + reference);
+            String callbackUrl = donationRequest.getCallbackUrl();
+            payload.put("callback_url", (callbackUrl != null && !callbackUrl.isBlank())
+                    ? callbackUrl
+                    : "https://petsave-frontend.vercel.app/payment/callback?ref=" + reference);
 
             log.info("Sending Paystack request with payload: {}", payload);
 

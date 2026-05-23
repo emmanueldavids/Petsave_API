@@ -53,7 +53,7 @@ public class NewDonationService {
             log.info("Donation record created with reference: {}", reference);
             
             // Call Paystack API
-            Map<String, Object> paystackResponse = callPaystackAPI(donation, reference);
+            Map<String, Object> paystackResponse = callPaystackAPI(donation, reference, donationRequest.getCallbackUrl());
             
             if (paystackResponse != null && (Boolean) paystackResponse.get("status")) {
                 Map<String, Object> data = (Map<String, Object>) paystackResponse.get("data");
@@ -96,13 +96,17 @@ public class NewDonationService {
         return donation;
     }
 
-    private Map<String, Object> callPaystackAPI(Donation donation, String reference) {
+    private Map<String, Object> callPaystackAPI(Donation donation, String reference, String callbackUrl) {
         try {
+            String resolvedCallback = (callbackUrl != null && !callbackUrl.isBlank())
+                    ? callbackUrl
+                    : frontendUrl + "/payment/callback?ref=" + reference;
+
             Map<String, Object> payload = new HashMap<>();
             payload.put("email", donation.getEmail());
             payload.put("amount", (int) (donation.getAmount() * 100)); // Convert to kobo
             payload.put("reference", reference);
-            payload.put("callback_url", frontendUrl + "/payment/callback?ref=" + reference);
+            payload.put("callback_url", resolvedCallback);
 
             log.info("Calling Paystack API with payload: {}", payload);
 

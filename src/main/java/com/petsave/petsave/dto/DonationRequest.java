@@ -27,6 +27,8 @@ public class DonationRequest {
     
     private String reference;
 
+    private String callbackUrl;
+
     public DonationRequest(String donorName, Float amount, LocalDateTime date, Gender gender, String country, String email, String reference) {
         this.donorName = donorName;
         this.amount = amount;
@@ -88,6 +90,12 @@ public class DonationRequest {
     }
     public void setReference(String reference) {
         this.reference = reference;
+    }
+    public String getCallbackUrl() {
+        return callbackUrl;
+    }
+    public void setCallbackUrl(String callbackUrl) {
+        this.callbackUrl = callbackUrl;
     }
     @Override
     public String toString() {
