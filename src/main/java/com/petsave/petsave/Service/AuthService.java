@@ -149,23 +149,36 @@ public class AuthService {
     // ================= REFRESH TOKEN =================
     public TokenResponse refreshToken(TokenRefreshRequest request) {
 
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new RuntimeException("Authentication failed: missing email");
-        }
-
         if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
-            throw new RuntimeException("Authentication failed: missing refresh token");
+            throw new RuntimeException("Refresh token is required");
         }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Authentication failed: user not found"));
+        // Extract email from the token itself — frontend does not need to send it separately
+        String email;
+        try {
+            email = jwtUtil.extractUsername(request.getRefreshToken());
+        } catch (Exception e) {
+            throw new RuntimeException("Session expired. Please log in again.");
+        }
+
+        // Fall back to the email field if extraction somehow fails
+        if (email == null || email.isBlank()) {
+            email = request.getEmail();
+        }
+
+        if (email == null || email.isBlank()) {
+            throw new RuntimeException("Session expired. Please log in again.");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Session expired. Please log in again."));
 
         if (user.getRefreshToken() == null || !request.getRefreshToken().equals(user.getRefreshToken())) {
-            throw new RuntimeException("Authentication failed: invalid refresh token");
+            throw new RuntimeException("Session expired. Please log in again.");
         }
 
         if (user.getRefreshTokenExpiry() == null || user.getRefreshTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Authentication failed: refresh token expired");
+            throw new RuntimeException("Session expired. Please log in again.");
         }
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail());

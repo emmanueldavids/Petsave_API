@@ -1,25 +1,11 @@
 package com.petsave.petsave.Controller;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
 import com.petsave.petsave.Service.AuthService;
-import com.petsave.petsave.Service.DonationService;
-import com.petsave.petsave.Service.AdoptionService;
 import com.petsave.petsave.dto.*;
-import com.petsave.petsave.Entity.User;
-import com.petsave.petsave.Repository.UserRepository;
-import com.petsave.petsave.Utils.JwtUtil;
-import lombok.extern.slf4j.Slf4j;
-
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,17 +14,6 @@ import java.util.HashMap;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    private final DonationService donationService;
-    private final AdoptionService adoptionService;
-
-    @Value("${spring.mail.username}")
-    private String mailUsername;
-
-    @Value("${spring.mail.password}")
-    private String mailPassword;
 
     @PostMapping("/register")
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
@@ -46,14 +21,14 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public AuthResponse verifyOtp(@RequestBody @Valid VerifyOtpDTO request) {
+    public AuthResponse verifyOtp(@Valid @RequestBody VerifyOtpDTO request) {
         return authService.verifyOtp(request);
     }
 
     @PostMapping({"/resend", "/resend-otp"})
     public AuthResponse resend(
             @RequestParam(required = false) String email,
-            @RequestBody(required = false) Map<String, String> body) {
+            @RequestBody(required = false) java.util.Map<String, String> body) {
         String resolvedEmail = (email != null) ? email : (body != null ? body.get("email") : null);
         if (resolvedEmail == null || resolvedEmail.isBlank()) {
             throw new RuntimeException("Email is required.");
@@ -71,54 +46,6 @@ public class AuthController {
         return authService.refreshToken(request);
     }
 
-    // Temporary debug endpoint for testing
-    @PostMapping("/debug-login")
-    public LoginResponse debugLogin(@RequestBody LoginRequest request) {
-        // For testing purposes, bypass verification
-        User user = userRepository.findByEmail(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found. Please check your username or email."));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
-        }
-
-        // Generate tokens without checking verification
-        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
-
-        return new LoginResponse(
-                accessToken,
-                refreshToken,
-                user.getName(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole()
-        );
-    }
-
-    // Create test user for development
-    @PostMapping("/create-test-user")
-    public AuthResponse createTestUser() {
-        String testEmail = "testuser" + System.currentTimeMillis() + "@example.com";
-        String testUsername = "testuser" + System.currentTimeMillis();
-        
-        if (userRepository.findByEmail(testEmail).isPresent()) {
-            return new AuthResponse("Test user already exists");
-        }
-
-        User testUser = User.builder()
-                .name("Test User")
-                .username(testUsername)
-                .email(testEmail)
-                .password(passwordEncoder.encode("password123"))
-                .role("USER")
-                .isVerified(true)
-                .build();
-
-        userRepository.save(testUser);
-        return new AuthResponse("Test user created successfully. Use " + testEmail + " / password123 to login.");
-    }
-
     @PostMapping("/reset-password/request")
     public AuthResponse requestReset(@RequestBody ResetPasswordRequest request) {
         return authService.requestPasswordReset(request);
@@ -127,62 +54,5 @@ public class AuthController {
     @PostMapping("/reset-password/confirm")
     public AuthResponse confirmReset(@RequestBody ResetConfirmRequest request) {
         return authService.confirmResetPassword(request);
-    }
-
-    @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(authService.getAllUsers());
-    }
-
-    @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return authService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/users/count")
-    public ResponseEntity<Long> getUserCount() {
-        Long count = authService.getUserCount();
-        return ResponseEntity.ok(count);
-    }
-
-    @GetMapping("/debug/email")
-    public ResponseEntity<Map<String, String>> debugEmailConfig() {
-        Map<String, String> config = new HashMap<>();
-        config.put("mailUsername", mailUsername != null ? mailUsername : "NULL");
-        config.put("mailPassword", mailPassword != null ? "SET" : "NULL");
-        return ResponseEntity.ok(config);
-    }
-
-    @GetMapping("/dashboard-stats")
-    public ResponseEntity<Map<String, Object>> getDashboardStats(@AuthenticationPrincipal(errorOnInvalidType = false) User currentUser) {
-        try {
-            if (currentUser == null) {
-                return ResponseEntity.status(401).body(Map.of("error", "User not authenticated"));
-            }
-
-            String email = currentUser.getUsername();
-            log.info("Getting dashboard stats for user: {}", email);
-
-            // Get user's donation statistics
-            var totalDonationsAmount = donationService.getTotalDonationsByUser(email);
-            var totalDonationsCount = donationService.getDonationCountByUser(email);
-            
-            // Get user's adoption statistics
-            var petsAdopted = adoptionService.getPetsAdoptedByUser(email);
-            var activeApplications = adoptionService.getActiveApplicationsByUser(email);
-
-            Map<String, Object> stats = new HashMap<>();
-            stats.put("totalDonationsAmount", totalDonationsAmount);
-            stats.put("totalDonationsCount", totalDonationsCount);
-            stats.put("petsAdopted", petsAdopted);
-            stats.put("activeApplications", activeApplications);
-
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            log.error("Error getting dashboard stats: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of("error", "Failed to get dashboard stats"));
-        }
     }
 }

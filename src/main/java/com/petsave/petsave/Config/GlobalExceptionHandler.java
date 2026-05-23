@@ -27,10 +27,12 @@ public class GlobalExceptionHandler {
         
         if (message.contains("email already exists") || message.contains("username already exists")) {
             status = HttpStatus.CONFLICT;
-        } else if (message.contains("authentication failed") || message.contains("refresh token") || message.contains("unauthorized")) {
+        } else if (message.contains("session expired") || message.contains("authentication failed") || message.contains("unauthorized")) {
             status = HttpStatus.UNAUTHORIZED;
-        } else if (message.contains("user not found") || message.contains("invalid")) {
+        } else if (message.contains("user not found") || message.contains("not found")) {
             status = HttpStatus.NOT_FOUND;
+        } else if (message.contains("invalid")) {
+            status = HttpStatus.BAD_REQUEST;
         }
         
         return ResponseEntity.status(status).body(response);

@@ -6,8 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,270 +25,139 @@ public class UserController {
 
     private final UserService userService;
 
-    /**
-     * Get total users count (public endpoint)
-     */
+    // ---- Current user profile ----
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getProfile() {
+        User user = getCurrentUser();
+        if (user == null) return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        return ResponseEntity.ok(Map.of("success", true, "profile", toProfileMap(user)));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> updateData) {
+        User user = getCurrentUser();
+        if (user == null) return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+
+        if (updateData.containsKey("name") && updateData.get("name") != null) {
+            user.setName(updateData.get("name"));
+        }
+        if (updateData.containsKey("username") && updateData.get("username") != null) {
+            String newUsername = updateData.get("username");
+            User existing = userService.findByUsername(newUsername);
+            if (existing != null && !existing.getId().equals(user.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Username already taken"));
+            }
+            user.setUsername(newUsername);
+        }
+        if (updateData.containsKey("email") && updateData.get("email") != null) {
+            String newEmail = updateData.get("email");
+            User existing = userService.findByEmail(newEmail);
+            if (existing != null && !existing.getId().equals(user.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email already taken"));
+            }
+            user.setEmail(newEmail);
+            user.setVerified(false);
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        User updated = userService.save(user);
+        return ResponseEntity.ok(Map.of("success", true, "message", "Profile updated", "profile", toProfileMap(updated)));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteAccount() {
+        User user = getCurrentUser();
+        if (user == null) return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        userService.deleteUser(user.getId());
+        return ResponseEntity.ok(Map.of("success", true, "message", "Account deleted successfully"));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            String email = auth.getPrincipal() instanceof UserDetails u ? u.getUsername() : auth.getName();
+            log.info("User {} logged out", email);
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "Logged out successfully"));
+    }
+
+    // ---- Public stats ----
+
     @GetMapping("/count")
     public ResponseEntity<?> getUserCount() {
-        try {
-            long totalUsers = userService.getTotalUsersCount();
-            long verifiedUsers = userService.getVerifiedUsersCount();
-            long adminUsers = userService.getUsersByRoleCount("ADMIN");
-            long regularUsers = userService.getUsersByRoleCount("USER");
-
-            Map<String, Object> stats = new HashMap<>();
-            stats.put("totalUsers", totalUsers);
-            stats.put("verifiedUsers", verifiedUsers);
-            stats.put("adminUsers", adminUsers);
-            stats.put("regularUsers", regularUsers);
-
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "count", totalUsers,
-                "stats", stats
-            ));
-
-        } catch (Exception e) {
-            log.error("Error getting user count: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(
-                "status", "error",
-                "message", "An unexpected error occurred. Please try again."
-            ));
-        }
+        long total = userService.getTotalUsersCount();
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalUsers", total);
+        stats.put("verifiedUsers", userService.getVerifiedUsersCount());
+        stats.put("adminUsers", userService.getUsersByRoleCount("ADMIN"));
+        stats.put("regularUsers", userService.getUsersByRoleCount("USER"));
+        return ResponseEntity.ok(Map.of("success", true, "count", total, "stats", stats));
     }
 
-    /**
-     * Get total users count (admin only - more detailed)
-     */
-    @GetMapping("/admin/count")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getUserCountAdmin() {
-        try {
-            long totalUsers = userService.getTotalUsersCount();
-            long verifiedUsers = userService.getVerifiedUsersCount();
-            long adminUsers = userService.getUsersByRoleCount("ADMIN");
-            long regularUsers = userService.getUsersByRoleCount("USER");
+    // ---- Admin CRUD ----
 
-            Map<String, Object> stats = new HashMap<>();
-            stats.put("totalUsers", totalUsers);
-            stats.put("verifiedUsers", verifiedUsers);
-            stats.put("adminUsers", adminUsers);
-            stats.put("regularUsers", regularUsers);
-
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "count", totalUsers,
-                "stats", stats
-            ));
-
-        } catch (Exception e) {
-            log.error("Error getting user count: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(
-                "status", "error",
-                "message", "An unexpected error occurred. Please try again."
-            ));
-        }
-    }
-
-    /**
-     * Get all users (public endpoint for testing)
-     */
-    @GetMapping("/all")
-    public ResponseEntity<?> getAllUsersPublic() {
-        try {
-            List<User> allUsers = userService.getAllUsers();
-            
-            // Convert users to safe format (excluding sensitive data)
-            List<Map<String, Object>> userSummaries = allUsers.stream()
-                .map(user -> {
-                    Map<String, Object> userSummary = new HashMap<>();
-                    userSummary.put("id", user.getId());
-                    userSummary.put("name", user.getName());
-                    userSummary.put("username", user.getUsername());
-                    userSummary.put("email", user.getEmail());
-                    userSummary.put("role", user.getRole());
-                    userSummary.put("isVerified", user.isVerified());
-                    userSummary.put("createdAt", user.getCreatedAt());
-                    return userSummary;
-                })
-                .collect(Collectors.toList());
-
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "users", userSummaries
-            ));
-
-        } catch (Exception e) {
-            log.error("Error getting all users: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(
-                "status", "error",
-                "message", "An unexpected error occurred. Please try again."
-            ));
-        }
-    }
-
-    /**
-     * Get all users with pagination (admin only)
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        try {
-            // Get all users (for now, return all users without pagination)
-            // In a real implementation, you would use pagination with userRepository.findAll(Pageable)
-            List<com.petsave.petsave.Entity.User> allUsers = userService.getAllUsers();
-            
-            // Convert users to safe format (excluding sensitive data)
-            List<Map<String, Object>> userSummaries = allUsers.stream()
-                .map(user -> {
-                    Map<String, Object> userSummary = new HashMap<>();
-                    userSummary.put("id", user.getId());
-                    userSummary.put("name", user.getName());
-                    userSummary.put("username", user.getUsername());
-                    userSummary.put("email", user.getEmail());
-                    userSummary.put("role", user.getRole());
-                    userSummary.put("isVerified", user.isVerified());
-                    userSummary.put("createdAt", user.getCreatedAt());
-                    return userSummary;
-                })
-                .collect(Collectors.toList());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("users", userSummaries);
-            response.put("totalUsers", allUsers.size());
-            response.put("page", page);
-            response.put("size", size);
-
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", response
-            ));
-
-        } catch (Exception e) {
-            log.error("Error getting all users: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(
-                "status", "error",
-                "message", "An unexpected error occurred. Please try again."
-            ));
-        }
+        List<User> users = userService.getAllUsers();
+        List<Map<String, Object>> summaries = users.stream().map(this::toProfileMap).collect(Collectors.toList());
+        return ResponseEntity.ok(Map.of("success", true, "data",
+                Map.of("users", summaries, "totalUsers", users.size(), "page", page, "size", size)));
     }
 
-    /**
-     * Get user by ID (admin only)
-     */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        try {
-            return userService.findById(id)
-                .map(user -> {
-                    Map<String, Object> userData = new HashMap<>();
-                    userData.put("id", user.getId());
-                    userData.put("name", user.getName());
-                    userData.put("username", user.getUsername());
-                    userData.put("email", user.getEmail());
-                    userData.put("role", user.getRole());
-                    userData.put("isVerified", user.isVerified());
-                    userData.put("createdAt", user.getCreatedAt());
-                    userData.put("updatedAt", user.getUpdatedAt());
-
-                    return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "user", userData
-                    ));
-                })
+        return userService.findById(id)
+                .map(u -> ResponseEntity.ok(Map.of("success", true, "user", toProfileMap(u))))
                 .orElse(ResponseEntity.notFound().build());
-
-        } catch (Exception e) {
-            log.error("Error getting user by ID: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(
-                "status", "error",
-                "message", "An unexpected error occurred. Please try again."
-            ));
-        }
     }
 
-    /**
-     * Update user (admin only)
-     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> updateData) {
-        try {
-            return userService.findById(id)
-                .map(user -> {
-                    // Update allowed fields
-                    if (updateData.containsKey("name")) {
-                        user.setName((String) updateData.get("name"));
-                    }
-                    if (updateData.containsKey("username")) {
-                        user.setUsername((String) updateData.get("username"));
-                    }
-                    if (updateData.containsKey("email")) {
-                        user.setEmail((String) updateData.get("email"));
-                    }
-                    if (updateData.containsKey("role")) {
-                        user.setRole((String) updateData.get("role"));
-                    }
-                    if (updateData.containsKey("isVerified")) {
-                        user.setVerified((Boolean) updateData.get("isVerified"));
-                    }
-
-                    com.petsave.petsave.Entity.User updatedUser = userService.save(user);
-
-                    Map<String, Object> userData = new HashMap<>();
-                    userData.put("id", updatedUser.getId());
-                    userData.put("name", updatedUser.getName());
-                    userData.put("username", updatedUser.getUsername());
-                    userData.put("email", updatedUser.getEmail());
-                    userData.put("role", updatedUser.getRole());
-                    userData.put("isVerified", updatedUser.isVerified());
-                    userData.put("createdAt", updatedUser.getCreatedAt());
-                    userData.put("updatedAt", updatedUser.getUpdatedAt());
-
-                    return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "User updated successfully",
-                        "user", userData
-                    ));
-                })
-                .orElse(ResponseEntity.notFound().build());
-
-        } catch (Exception e) {
-            log.error("Error updating user: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(
-                "status", "error",
-                "message", "An unexpected error occurred. Please try again."
-            ));
-        }
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> data) {
+        return userService.findById(id).map(user -> {
+            if (data.containsKey("name")) user.setName((String) data.get("name"));
+            if (data.containsKey("username")) user.setUsername((String) data.get("username"));
+            if (data.containsKey("email")) user.setEmail((String) data.get("email"));
+            if (data.containsKey("role")) user.setRole((String) data.get("role"));
+            if (data.containsKey("isVerified")) user.setVerified((Boolean) data.get("isVerified"));
+            User updated = userService.save(user);
+            return ResponseEntity.ok(Map.of("success", true, "message", "User updated", "user", toProfileMap(updated)));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Delete user (admin only)
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        try {
-            if (!userService.findById(id).isPresent()) {
-                return ResponseEntity.notFound().build();
-            }
+        if (userService.findById(id).isEmpty()) return ResponseEntity.notFound().build();
+        userService.deleteUser(id);
+        return ResponseEntity.ok(Map.of("success", true, "message", "User deleted successfully"));
+    }
 
-            userService.deleteUser(id);
+    // ---- Helpers ----
 
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "User deleted successfully"
-            ));
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) return null;
+        String email = auth.getPrincipal() instanceof UserDetails u ? u.getUsername() : auth.getName();
+        return userService.findByEmail(email);
+    }
 
-        } catch (Exception e) {
-            log.error("Error deleting user: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of(
-                "status", "error",
-                "message", "An unexpected error occurred. Please try again."
-            ));
-        }
+    private Map<String, Object> toProfileMap(User user) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", user.getId());
+        m.put("name", user.getName());
+        m.put("username", user.getUsername());
+        m.put("email", user.getEmail());
+        m.put("role", user.getRole());
+        m.put("isVerified", user.isVerified());
+        m.put("createdAt", user.getCreatedAt());
+        m.put("updatedAt", user.getUpdatedAt());
+        return m;
     }
 }

@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/api/health")
 public class HealthController {
 
     @GetMapping("/health")

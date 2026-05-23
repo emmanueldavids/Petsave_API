@@ -37,13 +37,13 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/auth/**",
-                    "/api/test/**",
+                    "/api/health/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/",
                     "/login**",
-                    "/loginSuccess",  
+                    "/loginSuccess",
                     "/oauth2/**",
                     "/api/blogs/**",
                     "/api/donations/**",
@@ -57,7 +57,6 @@ public class SecurityConfig {
                     "/uploads/image/**",
                     "/api/upload/**",
                     "/api/users/count",
-                    "/api/users/all",
                     "/ws",
                     "/api/paystack/webhook",
                     "/error"

@@ -26,6 +26,9 @@ public class NewDonationService {
     @Value("${paystack.secret.key}")
     private String paystackSecretKey;
 
+    @Value("${app.frontend.url:https://petsave-frontend.vercel.app}")
+    private String frontendUrl;
+
     private final DonationRepository donationRepository;
     private final WebClient.Builder webClientBuilder;
 
@@ -99,7 +102,7 @@ public class NewDonationService {
             payload.put("email", donation.getEmail());
             payload.put("amount", (int) (donation.getAmount() * 100)); // Convert to kobo
             payload.put("reference", reference);
-            payload.put("callback_url", "http://localhost:3000/payment/callback?ref=" + reference);
+            payload.put("callback_url", frontendUrl + "/payment/callback?ref=" + reference);
 
             log.info("Calling Paystack API with payload: {}", payload);
 
