@@ -137,12 +137,12 @@ public class AuthService {
         userRepository.save(user);
 
         return new LoginResponse(
-            accessToken, 
-            refreshToken, 
-            user.getName(), 
-            user.getUsername(), 
-            user.getEmail(), 
-            user.getRole() // Use actual role from user
+            accessToken,
+            refreshToken,
+            user.getName(),
+            user.getUsernameValue(),
+            user.getEmail(),
+            user.getRole()
         );
     }
 

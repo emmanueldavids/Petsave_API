@@ -100,6 +100,11 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email; // make sure JWT uses email as subject
+        return email; // Spring Security / JWT principal — always the email
+    }
+
+    /** Returns the actual stored username field (not the Spring Security principal). */
+    public String getUsernameValue() {
+        return username;
     }
 }

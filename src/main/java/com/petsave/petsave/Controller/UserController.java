@@ -152,7 +152,7 @@ public class UserController {
         Map<String, Object> m = new HashMap<>();
         m.put("id", user.getId());
         m.put("name", user.getName());
-        m.put("username", user.getUsername());
+        m.put("username", user.getUsernameValue());
         m.put("email", user.getEmail());
         m.put("role", user.getRole());
         m.put("isVerified", user.isVerified());
