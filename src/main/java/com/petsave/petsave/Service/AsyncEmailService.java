@@ -114,4 +114,83 @@ public class AsyncEmailService {
         String html = templateEngine.process("donation-confirmation", context);
         send(to, "Donation Confirmation - Thank You for Your Support! - PetSave", html);
     }
+
+    // ================= ADOPTION CHECK-IN EMAILS =================
+    @Async
+    public void sendCheckInReminderEmailAsync(String to, String adopterName, String petName, String milestone, LocalDateTime dueDate) {
+        Context context = new Context();
+        context.setVariable("name", adopterName);
+        context.setVariable("petName", petName);
+        context.setVariable("milestone", milestone.replaceAll("_", " ").toLowerCase());
+        context.setVariable("dueDate", dueDate.format(DateTimeFormatter.ofPattern("MMMM dd, yyyy")));
+        context.setVariable("subject", "Pet Health Check-in Reminder");
+        context.setVariable("checkInUrl", frontendUrl + "/dashboard/adoptions");
+
+        String html = templateEngine.process("email/check-in-reminder", context);
+        send(to, "PetSave - " + petName + " Health Check-in Reminder", html);
+    }
+
+    @Async
+    public void sendCheckInConfirmationEmailAsync(String to, String adopterName, String milestone) {
+        Context context = new Context();
+        context.setVariable("name", adopterName);
+        context.setVariable("milestone", milestone.replaceAll("_", " ").toLowerCase());
+        context.setVariable("subject", "Check-in Submitted");
+        context.setVariable("dashboardUrl", frontendUrl + "/dashboard/adoptions");
+
+        String html = templateEngine.process("email/check-in-confirmation", context);
+        send(to, "PetSave - Health Check-in Received", html);
+    }
+
+    @Async
+    public void sendAdminMissedCheckInAlertAsync(String adopterName, String adopterEmail, String petName, String milestone, LocalDateTime dueDate) {
+        try {
+            String adminEmail = System.getenv("ADMIN_EMAIL");
+            if (adminEmail == null) {
+                adminEmail = "admin@petsave.com";
+            }
+
+            Context context = new Context();
+            context.setVariable("adopterName", adopterName);
+            context.setVariable("adopterEmail", adopterEmail);
+            context.setVariable("petName", petName);
+            context.setVariable("milestone", milestone.replaceAll("_", " ").toLowerCase());
+            context.setVariable("dueDate", dueDate.format(DateTimeFormatter.ofPattern("MMMM dd, yyyy")));
+            context.setVariable("overdueSince", LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy")));
+            context.setVariable("subject", "Missed Pet Health Check-in");
+            context.setVariable("adminDashboardUrl", frontendUrl + "/admin/check-ins");
+
+            String html = templateEngine.process("email/admin-missed-check-in", context);
+            send(adminEmail, "⚠️ PetSave Admin Alert - Missed Check-in: " + petName, html);
+
+            log.warn("Admin alert sent for missed check-in: {} ({})", petName, adopterEmail);
+        } catch (Exception e) {
+            log.error("Failed to send admin missed check-in alert: {}", e.getMessage(), e);
+        }
+    }
+
+    @Async
+    public void sendAdminHealthConcernAlertAsync(String petName, String adopterName, String healthStatus, String notes) {
+        try {
+            String adminEmail = System.getenv("ADMIN_EMAIL");
+            if (adminEmail == null) {
+                adminEmail = "admin@petsave.com";
+            }
+
+            Context context = new Context();
+            context.setVariable("petName", petName);
+            context.setVariable("adopterName", adopterName);
+            context.setVariable("healthStatus", healthStatus.replaceAll("_", " ").toLowerCase());
+            context.setVariable("notes", notes != null ? notes : "No additional notes provided");
+            context.setVariable("subject", "Pet Health Concern Alert");
+            context.setVariable("adminDashboardUrl", frontendUrl + "/admin/check-ins");
+
+            String html = templateEngine.process("email/admin-health-concern", context);
+            send(adminEmail, "⚠️ PetSave Admin Alert - Health Concern: " + petName, html);
+
+            log.warn("Admin alert sent for health concern: {} ({})", petName, healthStatus);
+        } catch (Exception e) {
+            log.error("Failed to send admin health concern alert: {}", e.getMessage(), e);
+        }
+    }
 }

@@ -29,4 +29,21 @@ public class EmailUtil {
     public void sendDonationConfirmation(String to, String name, Double amount, String transactionId) {
         asyncEmailService.sendDonationConfirmationAsync(to, name, amount, transactionId);
     }
+
+    // ================= ADOPTION CHECK-IN EMAILS =================
+    public void sendCheckInReminderEmail(String to, String adopterName, String petName, String milestone, java.time.LocalDateTime dueDate) {
+        asyncEmailService.sendCheckInReminderEmailAsync(to, adopterName, petName, milestone, dueDate);
+    }
+
+    public void sendCheckInConfirmationEmail(String to, String adopterName, String milestone) {
+        asyncEmailService.sendCheckInConfirmationEmailAsync(to, adopterName, milestone);
+    }
+
+    public void sendAdminMissedCheckInAlert(String adopterName, String adopterEmail, String petName, String milestone, java.time.LocalDateTime dueDate) {
+        asyncEmailService.sendAdminMissedCheckInAlertAsync(adopterName, adopterEmail, petName, milestone, dueDate);
+    }
+
+    public void sendAdminHealthConcernAlert(String petName, String adopterName, String healthStatus, String notes) {
+        asyncEmailService.sendAdminHealthConcernAlertAsync(petName, adopterName, healthStatus, notes);
+    }
 }

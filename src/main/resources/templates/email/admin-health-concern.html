@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Concern Alert</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .concern-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #f39c12;
+        }
+        .concern-info {
+            background: #fef5e7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info-row {
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .label {
+            font-weight: bold;
+            color: #f39c12;
+            display: inline-block;
+            width: 140px;
+        }
+        .health-status {
+            display: inline-block;
+            background: #f39c12;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .notes-section {
+            background: #fef9e7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border: 1px dashed #f39c12;
+        }
+        .button {
+            display: inline-block;
+            background: #f39c12;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚨 Pet Health Concern Alert</h1>
+    </div>
+
+    <div class="content">
+        <p>Hello Admin,</p>
+
+        <p>A health concern has been reported in an adoption follow-up:</p>
+
+        <div class="concern-card">
+            <div class="concern-info">
+                <div class="info-row">
+                    <span class="label">Pet Name:</span>
+                    <strong th:text="${petName}">Pet Name</strong>
+                </div>
+                <div class="info-row">
+                    <span class="label">Adopter:</span>
+                    <strong th:text="${adopterName}">Adopter Name</strong>
+                </div>
+                <div class="info-row">
+                    <span class="label">Health Status:</span>
+                    <span class="health-status" th:text="${healthStatus}">Status</span>
+                </div>
+            </div>
+
+            <div class="notes-section">
+                <p><strong>Adopter's Notes:</strong></p>
+                <p th:text="${notes}">No notes provided</p>
+            </div>
+        </div>
+
+        <p><strong>Recommended Actions:</strong></p>
+        <ul>
+            <li>Contact the adopter immediately to understand the concern</li>
+            <li>Recommend veterinary evaluation if not already done</li>
+            <li>Offer support or resources if needed</li>
+            <li>Document the concern for future reference</li>
+            <li>Follow up within 7 days to ensure pet received care</li>
+        </ul>
+
+        <center>
+            <a href="#" class="button" th:href="${adminDashboardUrl}">View Check-in Details</a>
+        </center>
+
+        <div class="footer">
+            <p>PetSave Admin System - Ensure Pet Welfare</p>
+        </div>
+    </div>
+</body>
+</html>
