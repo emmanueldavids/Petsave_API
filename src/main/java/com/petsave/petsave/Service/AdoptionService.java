@@ -27,6 +27,7 @@ public class AdoptionService {
     private final UserRepository userRepository;
     private final PetRepository petRepository;
     private final AdoptionEmailService adoptionEmailService;
+    private final com.petsave.petsave.Service.AdoptionCheckInService checkInService;
 
     public Adoption createAdoption(Adoption adoption, Long userId) {
         User user = userRepository.findById(userId)
@@ -89,8 +90,10 @@ public class AdoptionService {
     }
 
     public Adoption updateAdoptionStatus(Long id, AdoptionStatus status) {
-        Adoption adoption = adoptionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Adoption not found with id: " + id));
+        // Try to fetch adoption with user eagerly to avoid lazy proxy issues when serializing
+        Adoption adoption = adoptionRepository.findByIdWithUser(id)
+            .orElseGet(() -> adoptionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Adoption not found with id: " + id)));
         
         adoption.setStatus(status);
         
@@ -144,7 +147,19 @@ public class AdoptionService {
             }
         }
         
-        return adoptionRepository.save(adoption);
+        Adoption saved = adoptionRepository.save(adoption);
+
+        // If adoption was approved or completed, trigger check-in creation
+        if (status == AdoptionStatus.APPROVED || status == AdoptionStatus.COMPLETED) {
+            try {
+                checkInService.createCheckInsForAdoption(saved.getId());
+            } catch (Exception e) {
+                // Log but don't fail the update
+                System.err.println("Error creating check-ins for adoption: " + e.getMessage());
+            }
+        }
+
+        return saved;
     }
 
     public Adoption updateAdoption(Long id, Adoption adoptionDetails) {

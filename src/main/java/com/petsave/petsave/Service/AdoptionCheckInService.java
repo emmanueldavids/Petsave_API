@@ -35,7 +35,7 @@ public class AdoptionCheckInService {
     private final EmailUtil emailUtil;
     private final CloudinaryService cloudinaryService;
 
-    @Value("${app.upload.check-in-photos}")
+    @Value("${app.upload.check-in-photos:}")
     private String uploadDir;
 
     // ================= CREATE CHECK-INS FOR NEW COMPLETED ADOPTIONS =================
@@ -44,8 +44,16 @@ public class AdoptionCheckInService {
         Adoption adoption = adoptionRepository.findById(adoptionId)
                 .orElseThrow(() -> new RuntimeException("Adoption not found"));
 
-        if (adoption.getStatus() != AdoptionStatus.COMPLETED) {
-            log.warn("Adoption {} is not in COMPLETED status. Skipping check-in creation.", adoptionId);
+        // Allow creation when adoption is APPROVED or COMPLETED
+        if (adoption.getStatus() != AdoptionStatus.COMPLETED && adoption.getStatus() != AdoptionStatus.APPROVED) {
+            log.warn("Adoption {} is not in APPROVED/COMPLETED status. Skipping check-in creation.", adoptionId);
+            return;
+        }
+
+        // Avoid creating duplicate check-ins
+        var existing = checkInRepository.findByAdoptionId(adoptionId);
+        if (existing != null && !existing.isEmpty()) {
+            log.info("Check-ins already exist for adoption {}. Skipping creation.", adoptionId);
             return;
         }
 
@@ -240,6 +248,10 @@ public class AdoptionCheckInService {
     }
 
     private String uploadPhotoLocally(MultipartFile file) throws IOException {
+        if (uploadDir == null || uploadDir.isBlank()) {
+            throw new RuntimeException("Local upload directory is not configured");
+        }
+
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
         Path filePath = Paths.get(uploadDir, fileName);
         
