@@ -55,7 +55,6 @@ public class SecurityConfig {
                     "/api/contact",
                     "/api/adoptions/**",
                     "/api/pets/**",
-                    "/api/posts/**",
                     "/api/chats/**",
                     "/uploads/**",
                     "/uploads/pet-images/**",
@@ -66,8 +65,12 @@ public class SecurityConfig {
                     "/api/paystack/webhook",
                     "/error"
                 ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/rehomings/admin", "/api/rehomings/my-applications").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/rehomings", "/api/rehomings/*").permitAll()
                 .requestMatchers("/api/rehomings/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/*").permitAll()
+                .requestMatchers("/api/posts/**").authenticated()
+                .requestMatchers("/api/comments/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

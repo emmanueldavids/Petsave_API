@@ -42,6 +42,26 @@ public class PetRehomingService {
         return petRehomingRepository.findById(id);
     }
 
+    public List<PetRehoming> listForAdmin(String statusParam) {
+        User currentUser = getCurrentUser();
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+            throw new RuntimeException("Only admins can view the rehoming review queue");
+        }
+        if (statusParam == null || statusParam.isBlank()) {
+            return petRehomingRepository.findByStatusOrderByCreatedAtDesc(RehomingStatus.PENDING_REVIEW);
+        }
+        if ("ALL".equalsIgnoreCase(statusParam)) {
+            return petRehomingRepository.findAllByOrderByCreatedAtDesc();
+        }
+        RehomingStatus status;
+        try {
+            status = RehomingStatus.valueOf(statusParam.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + statusParam);
+        }
+        return petRehomingRepository.findByStatusOrderByCreatedAtDesc(status);
+    }
+
     public PetRehoming updateRehoming(Long id, PetRehoming updates) {
         PetRehoming existing = petRehomingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Rehoming not found with id: " + id));
@@ -123,7 +143,7 @@ public class PetRehomingService {
         return rehomingApplicationRepository.findByRehomingOrderByCreatedAtDesc(rehoming);
     }
 
-    public RehomingApplication approveApplicant(Long rehomingId, Long applicantId) {
+    public RehomingApplication approveApplicant(Long rehomingId, Long applicationId) {
         PetRehoming rehoming = petRehomingRepository.findById(rehomingId)
                 .orElseThrow(() -> new RuntimeException("Rehoming not found with id: " + rehomingId));
         User currentUser = getCurrentUser();
@@ -131,8 +151,8 @@ public class PetRehomingService {
             throw new RuntimeException("Only the owner can approve an applicant");
         }
 
-        RehomingApplication application = rehomingApplicationRepository.findById(applicantId)
-                .orElseThrow(() -> new RuntimeException("Application not found with id: " + applicantId));
+        RehomingApplication application = rehomingApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Application not found with id: " + applicationId));
         if (!application.getRehoming().getId().equals(rehoming.getId())) {
             throw new RuntimeException("Application does not belong to this rehoming listing");
         }
@@ -141,7 +161,22 @@ public class PetRehomingService {
         rehoming.setStatus(RehomingStatus.ADOPTED);
         rehoming.setAdoptedBy(application.getApplicant());
         petRehomingRepository.save(rehoming);
-        return rehomingApplicationRepository.save(application);
+        RehomingApplication saved = rehomingApplicationRepository.save(application);
+
+        List<RehomingApplication> otherApplications = rehomingApplicationRepository.findByRehomingOrderByCreatedAtDesc(rehoming);
+        for (RehomingApplication other : otherApplications) {
+            if (!other.getId().equals(saved.getId()) && other.getStatus() == RehomingApplicationStatus.PENDING) {
+                other.setStatus(RehomingApplicationStatus.REJECTED);
+                rehomingApplicationRepository.save(other);
+            }
+        }
+
+        return saved;
+    }
+
+    public List<RehomingApplication> listMyApplications() {
+        User currentUser = getCurrentUser();
+        return rehomingApplicationRepository.findByApplicantIdOrderByCreatedAtDesc(currentUser.getId());
     }
 
     private User getCurrentUser() {

@@ -18,6 +18,7 @@ public interface RehomingApplicationRepository extends JpaRepository<RehomingApp
     @EntityGraph(attributePaths = {"applicant", "rehoming"})
     List<RehomingApplication> findByRehomingOrderByCreatedAtDesc(PetRehoming rehoming);
 
+    @EntityGraph(attributePaths = {"applicant", "rehoming"})
     List<RehomingApplication> findByApplicantIdOrderByCreatedAtDesc(Long applicantId);
 
     @EntityGraph(attributePaths = {"applicant", "rehoming"})

@@ -19,4 +19,7 @@ public interface PetRehomingRepository extends JpaRepository<PetRehoming, Long> 
 
     @EntityGraph(attributePaths = {"owner", "approvedBy", "adoptedBy"})
     List<PetRehoming> findByOwnerIdOrderByCreatedAtDesc(Long ownerId);
+
+    @EntityGraph(attributePaths = {"owner", "approvedBy", "adoptedBy"})
+    List<PetRehoming> findAllByOrderByCreatedAtDesc();
 }

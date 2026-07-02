@@ -28,6 +28,16 @@ public class PetRehomingController {
         return ResponseEntity.ok(petRehomingService.listMyRehomings());
     }
 
+    @GetMapping("/admin")
+    public ResponseEntity<List<PetRehoming>> listForAdmin(@RequestParam(required = false) String status) {
+        return ResponseEntity.ok(petRehomingService.listForAdmin(status));
+    }
+
+    @GetMapping("/my-applications")
+    public ResponseEntity<List<RehomingApplication>> listMyApplications() {
+        return ResponseEntity.ok(petRehomingService.listMyApplications());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PetRehoming> getRehoming(@PathVariable Long id) {
         return petRehomingService.getRehoming(id)
@@ -67,8 +77,8 @@ public class PetRehomingController {
         return ResponseEntity.ok(petRehomingService.listApplications(id));
     }
 
-    @PatchMapping("/{id}/approve/{userId}")
-    public ResponseEntity<RehomingApplication> approveApplicant(@PathVariable Long id, @PathVariable Long userId) {
-        return ResponseEntity.ok(petRehomingService.approveApplicant(id, userId));
+    @PatchMapping("/{id}/approve/{applicationId}")
+    public ResponseEntity<RehomingApplication> approveApplicant(@PathVariable Long id, @PathVariable Long applicationId) {
+        return ResponseEntity.ok(petRehomingService.approveApplicant(id, applicationId));
     }
 }

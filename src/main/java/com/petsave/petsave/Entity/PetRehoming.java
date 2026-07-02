@@ -56,10 +56,12 @@ public class PetRehoming {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by_id")
+    @JsonIgnoreProperties({"password", "verificationCode", "verificationCodeExpiresAt", "refreshToken", "refreshTokenExpiry", "resetCode", "resetCodeExpiry", "authorities"})
     private User approvedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "adopted_by_id")
+    @JsonIgnoreProperties({"password", "verificationCode", "verificationCodeExpiresAt", "refreshToken", "refreshTokenExpiry", "resetCode", "resetCodeExpiry", "authorities"})
     private User adoptedBy;
 
     private LocalDateTime createdAt;
