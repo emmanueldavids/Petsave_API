@@ -36,11 +36,11 @@ public class NotificationController {
             
             log.info("Sending notification from {} to {}: {}", principal.getName(), recipientEmail);
             
-            // Send notification via WebSocket
+            // Persist the notification
             notificationService.sendNotificationToUser(recipientEmail, message, type);
-            
-            // Broadcast WebSocket message
-            webSocketHandler.broadcastMessage(Map.of(
+
+            // Deliver in real-time to just the intended recipient (if they're online)
+            webSocketHandler.sendToUser(recipientEmail, Map.of(
                 "type", type,
                 "message", message,
                 "recipient", recipientEmail,
