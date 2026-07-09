@@ -50,4 +50,15 @@ public class ChatController {
     public ResponseEntity<?> getUnreadCount() {
         return ResponseEntity.ok(Map.of("unreadCount", chatService.getUnreadCount()));
     }
+
+    @PutMapping("/messages/{id}")
+    public ResponseEntity<MessageResponse> editMessage(@PathVariable Long id, @Valid @RequestBody ChatMessageRequest request) {
+        return ResponseEntity.ok(chatService.editMessage(id, request.getContent()));
+    }
+
+    @DeleteMapping("/messages/{id}")
+    public ResponseEntity<?> deleteMessage(@PathVariable Long id) {
+        chatService.deleteMessage(id);
+        return ResponseEntity.ok(Map.of("message", "Message deleted successfully"));
+    }
 }

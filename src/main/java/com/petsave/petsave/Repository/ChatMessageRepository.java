@@ -9,11 +9,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"sender", "conversation", "conversation.participant1", "conversation.participant2"})
+    Optional<ChatMessage> findById(Long id);
+
     @EntityGraph(attributePaths = {"sender"})
     List<ChatMessage> findByConversationOrderByCreatedAtAsc(ChatConversation conversation);
+
+    Optional<ChatMessage> findTopByConversationOrderByCreatedAtDesc(ChatConversation conversation);
 
     long countByConversationAndSenderNotAndIsReadFalse(ChatConversation conversation, User excludeSender);
 

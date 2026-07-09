@@ -55,6 +55,7 @@ The WebSocket connection authenticates via the `token` query param (already impl
   "receiver": { "id": 5, "name": "Second User", "email": "seconduser1@example.com" },
   "content": "Hi, is Bella still available?",
   "isRead": false,
+  "edited": false,
   "createdAt": "2026-07-02 23:13:49",
   "timeAgo": "Just now",
   "readAt": null
@@ -62,6 +63,7 @@ The WebSocket connection authenticates via the `token` query param (already impl
 ```
 
 - `messageType`, `fileUrl`, `fileName`, `fileSize` exist on this DTO (shared with an earlier, unused chat design) but are **never populated** — this MVP is text-only, no attachments. Treat them as always absent.
+- `edited: true` means the sender has edited this message's content at least once (see section 7 below) — render an "(edited)" tag next to it, same as most messaging apps.
 
 ## API Contract
 
@@ -103,6 +105,23 @@ The WebSocket connection authenticates via the `token` query param (already impl
 - `GET /api/chat/unread-count`
 - Returns `{ "unreadCount": 3 }` — total unread messages across *all* your conversations. Use this for a badge on the chat/inbox nav icon.
 
+### 7) Edit a message
+
+- `PUT /api/chat/messages/{id}`
+- Body: `{ "content": "corrected text" }` (same shape/validation as sending — max 2000 chars)
+- Only the original sender can edit — `400` with `"Only the sender can edit this message"` otherwise.
+- Sets `edited: true` on the message going forward (permanent — there's no "unedit").
+- If this was the conversation's most recent message, the inbox list's `lastMessage` preview updates to match the new content immediately.
+- Pushes a `MESSAGE_EDITED` WebSocket event to the other participant (see envelope below) if they're connected.
+
+### 8) Delete a message
+
+- `DELETE /api/chat/messages/{id}`
+- Only the original sender (or an admin) can delete — `400` with `"Only the sender can delete this message"` otherwise.
+- This is a **hard delete** — the message row is gone, not soft-marked. There's no "this message was deleted" placeholder; it simply disappears from the thread on next fetch.
+- If the deleted message was the conversation's most recent one, the inbox list's `lastMessage`/`lastMessageAt` automatically recalculates to the next most recent remaining message (or clears to empty if none remain) — you don't need to do anything client-side to keep the inbox preview correct, just refetch `GET /api/chat/conversations` or handle the push event below.
+- Pushes a `MESSAGE_DELETED` WebSocket event to the other participant if they're connected.
+
 ## WebSocket: Real-Time Message Delivery
 
 Connect to the same `/ws` endpoint already used for notifications (`websocketService.ts` already does this correctly). When someone sends you a message while you're connected, you'll receive:
@@ -118,17 +137,28 @@ Connect to the same `/ws` endpoint already used for notifications (`websocketSer
 }
 ```
 
-Frontend: in `websocketService.ts`'s `handleMessage` switch (or wherever you consume messages), add a case for `CHAT_MESSAGE` that:
-- Appends the message to the open conversation's message list if `conversationId` matches what's currently open, and/or
-- Bumps that conversation to the top of the inbox list and increments its unread badge if it's not currently open.
+Editing and deleting push two more event types to the other participant:
 
-This event is **delivery-only** — it doesn't replace fetching `GET /api/chat/conversations/{id}/messages` for history; it's how you learn about new messages that arrive while the tab is open. There's no `MESSAGE_READ` push event yet — read-state changes are only visible by refetching.
+```json
+{ "type": "MESSAGE_EDITED", "conversationId": 1, "messageId": 7, "content": "Second message EDITED", "timestamp": "2026-07-09T21:05:09.193526" }
+```
+
+```json
+{ "type": "MESSAGE_DELETED", "conversationId": 1, "messageId": 7, "timestamp": "2026-07-09T21:05:09.771893" }
+```
+
+Frontend: in `websocketService.ts`'s `handleMessage` switch (or wherever you consume messages), handle:
+- `CHAT_MESSAGE`: append the message to the open conversation's message list if `conversationId` matches what's currently open, and/or bump that conversation to the top of the inbox list and increment its unread badge if it's not currently open.
+- `MESSAGE_EDITED`: find the message by `messageId` in the open thread and replace its content, mark it edited.
+- `MESSAGE_DELETED`: remove the message with `messageId` from the open thread's local state.
+
+These events are **delivery-only** — they don't replace fetching `GET /api/chat/conversations/{id}/messages` for history; they're how you learn about changes that happen while the tab is open. There's no `MESSAGE_READ` push event yet — read-state changes are only visible by refetching.
 
 ## Error Handling
 
 Same convention as the rest of the API: `{"status":"error","message":"..."}`, mostly `400` for ownership/participation violations (not `403`) since these come from application logic, not the security filter. Truly unauthenticated requests to any `/api/chat/**` endpoint get a plain `403` before reaching app logic.
 
-Common messages: `"Conversation not found with id: {id}"`, `"You are not a participant in this conversation"`, `"You cannot start a conversation with yourself"`, `"User not found with id: {id}"`, `"Authentication required"`.
+Common messages: `"Conversation not found with id: {id}"`, `"You are not a participant in this conversation"`, `"You cannot start a conversation with yourself"`, `"User not found with id: {id}"`, `"Authentication required"`, `"Message not found with id: {id}"`, `"Only the sender can edit this message"`, `"Only the sender can delete this message"`.
 
 ## Suggested `chatAPI` shape for `lib/api.ts`
 
@@ -141,14 +171,16 @@ export const chatAPI = {
     api.post(`/api/chat/conversations/${conversationId}/messages`, { content }),
   markAsRead: (conversationId: number) => api.patch(`/api/chat/conversations/${conversationId}/read`),
   getUnreadCount: () => api.get('/api/chat/unread-count'),
+  editMessage: (messageId: number, content: string) => api.put(`/api/chat/messages/${messageId}`, { content }),
+  deleteMessage: (messageId: number) => api.delete(`/api/chat/messages/${messageId}`),
 };
 ```
 
 ## Known Gaps (not implemented)
 
 - No message pagination (a very long thread loads in full every time).
-- No typing indicators, delivery receipts, or "seen" push events — only the `CHAT_MESSAGE` new-message push and pull-based read state.
+- No typing indicators, delivery receipts, or "seen" push events — only the `CHAT_MESSAGE`/`MESSAGE_EDITED`/`MESSAGE_DELETED` pushes and pull-based read state.
 - No group chats — conversations are strictly one-to-one (`participant1`/`participant2`).
-- No message editing or deletion.
+- Message deletion is a hard delete with no placeholder — no "edit history" or "this message was deleted" trace is kept.
 - No file/image attachments, despite unused fields on `MessageResponse` suggesting otherwise.
 - `otherUser`/`sender`/`receiver` only carry `id`/`name`/`email` — no avatar or online-status data.

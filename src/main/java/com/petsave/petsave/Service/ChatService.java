@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -97,6 +98,69 @@ public class ChatService {
         return response;
     }
 
+    public MessageResponse editMessage(Long messageId, String newContent) {
+        User currentUser = getCurrentUser();
+        ChatMessage message = chatMessageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found with id: " + messageId));
+        if (!message.getSender().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Only the sender can edit this message");
+        }
+
+        message.setContent(newContent);
+        message.setEdited(true);
+        ChatMessage saved = chatMessageRepository.save(message);
+
+        ChatConversation conversation = saved.getConversation();
+        refreshConversationPreview(conversation);
+
+        User otherUser = otherParticipant(conversation, currentUser);
+        webSocketHandler.sendToUser(otherUser.getEmail(), Map.of(
+                "type", "MESSAGE_EDITED",
+                "conversationId", conversation.getId(),
+                "messageId", saved.getId(),
+                "content", newContent,
+                "timestamp", LocalDateTime.now().toString()
+        ));
+
+        return mapToMessageResponse(saved);
+    }
+
+    public void deleteMessage(Long messageId) {
+        User currentUser = getCurrentUser();
+        ChatMessage message = chatMessageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found with id: " + messageId));
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
+        if (!message.getSender().getId().equals(currentUser.getId()) && !isAdmin) {
+            throw new RuntimeException("Only the sender can delete this message");
+        }
+
+        ChatConversation conversation = message.getConversation();
+        User otherUser = otherParticipant(conversation, message.getSender());
+
+        chatMessageRepository.delete(message);
+        refreshConversationPreview(conversation);
+
+        webSocketHandler.sendToUser(otherUser.getEmail(), Map.of(
+                "type", "MESSAGE_DELETED",
+                "conversationId", conversation.getId(),
+                "messageId", messageId,
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
+    private void refreshConversationPreview(ChatConversation conversation) {
+        Optional<ChatMessage> latest = chatMessageRepository.findTopByConversationOrderByCreatedAtDesc(conversation);
+        if (latest.isPresent()) {
+            String content = latest.get().getContent();
+            conversation.setLastMessagePreview(content.length() > 100 ? content.substring(0, 100) : content);
+            conversation.setLastMessageAt(latest.get().getCreatedAt());
+        } else {
+            conversation.setLastMessagePreview(null);
+            conversation.setLastMessageAt(null);
+        }
+        chatConversationRepository.save(conversation);
+    }
+
     public void markAsRead(Long conversationId) {
         User currentUser = getCurrentUser();
         ChatConversation conversation = getConversationForParticipant(conversationId, currentUser);
@@ -157,6 +221,7 @@ public class ChatService {
                 .receiver(mapToUserResponse(receiver))
                 .content(message.getContent())
                 .isRead(message.getIsRead())
+                .edited(message.getEdited())
                 .createdAt(message.getCreatedAt())
                 .timeAgo(timeAgo(message.getCreatedAt()))
                 .readAt(message.getReadAt())

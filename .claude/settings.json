@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"=== Backend: Volunteer/Badge/Task files ===\" *)",
+      "Read(//Users/emmanueldavids/Documents/pp/Petsave_Frontend/src/**)",
+      "Bash(./mvnw -q -o compile)",
+      "Bash(curl -sS -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/posts)",
+      "Bash(pwd; ls *)",
+      "Read(//private/tmp/claude-501/**)",
+      "Bash(curl -sS -w \"\\\\nHTTP:%{http_code}\\\\n\" http://localhost:8080/api/volunteers/my)",
+      "Bash(curl -sS -w \"\\\\nHTTP:%{http_code}\\\\n\" http://localhost:8080/api/volunteers/tasks)",
+      "Bash(curl -sS -w \"\\\\nHTTP:%{http_code}\\\\n\" http://localhost:8080/api/volunteers/stats -o /dev/null -w \"HTTP:%{http_code}\\\\n\")",
+      "Bash(curl -sS -o /dev/null -w \"HTTP:%{http_code}\\\\n\" http://localhost:8080/api/volunteers/1)",
+      "Bash(curl -sS -o /dev/null -w \"posts: %{http_code}\\\\n\" http://localhost:8080/api/posts)",
+      "Bash(curl -sS -o /dev/null -w \"rehomings: %{http_code}\\\\n\" http://localhost:8080/api/rehomings)",
+      "Bash(curl -sS -o /dev/null -w \"volunteers: %{http_code}\\\\n\" http://localhost:8080/api/volunteers)",
+      "Bash(curl -sS -o /dev/null -w \"volunteer stats: %{http_code}\\\\n\" http://localhost:8080/api/volunteers/stats)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(node chatedit.js)",
+      "Bash(lsof -nP -iTCP:8080 -sTCP:LISTEN)",
+      "Read(//tmp/**)",
+      "Bash(ps -p 75861 -o pid,lstart,command)",
+      "Bash(kill 75861)",
+      "Bash(nohup ./mvnw -q -o spring-boot:run)",
+      "Bash(echo \"started PID $!\")",
+      "Bash(lsof -tnP -iTCP:8080 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)"
+    ]
+  }
+}

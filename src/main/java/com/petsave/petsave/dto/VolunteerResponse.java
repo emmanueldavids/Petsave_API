@@ -2,45 +2,46 @@ package com.petsave.petsave.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MessageResponse {
-    
-    private Long id;
-    
-    private UserResponse sender;
-    
-    private UserResponse receiver;
-    
-    private String content;
-    
-    private String messageType;
-    
-    private String fileUrl;
-    
-    private String fileName;
-    
-    private Long fileSize;
-    
-    private Boolean isRead;
+public class VolunteerResponse {
 
-    private Boolean edited;
+    private Long id;
+
+    private UserResponse user;
+
+    private Set<String> skills;
+
+    private String availability;
+
+    private String location;
+
+    private String bio;
+
+    private String emergencyContact;
+
+    private String status;
+
+    private Integer hoursLogged;
+
+    private Integer totalTasksCompleted;
+
+    private String badgeLevel;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
-    
-    private String timeAgo;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime readAt;
+    private LocalDateTime updatedAt;
 }

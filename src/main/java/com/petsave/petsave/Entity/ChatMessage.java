@@ -32,6 +32,9 @@ public class ChatMessage {
 
     private LocalDateTime readAt;
 
+    @Column(nullable = false)
+    private Boolean edited = false;
+
     private LocalDateTime createdAt;
 
     @PrePersist
