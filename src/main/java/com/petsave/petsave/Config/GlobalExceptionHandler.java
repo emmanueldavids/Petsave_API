@@ -1,6 +1,8 @@
 package com.petsave.petsave.Config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -10,7 +12,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
+// Lowest precedence: this is the catch-all fallback. It must be evaluated AFTER
+// GlobalValidationExceptionHandler, or its `Exception.class` handler shadows
+// MethodArgumentNotValidException and turns every @Valid failure into a generic 500.
 @RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
 @Slf4j
 public class GlobalExceptionHandler {
 

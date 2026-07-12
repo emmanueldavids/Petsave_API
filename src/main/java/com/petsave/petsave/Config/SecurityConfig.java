@@ -74,6 +74,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/volunteers/my", "/api/volunteers/tasks", "/api/volunteers/admin").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/volunteers", "/api/volunteers/*").permitAll()
                 .requestMatchers("/api/volunteers/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/sitters/my", "/api/sitters/admin").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/sitters", "/api/sitters/*").permitAll()
+                .requestMatchers("/api/sitters/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
