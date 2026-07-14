@@ -1,14 +1,12 @@
 package com.petsave.petsave.Controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.petsave.petsave.Config.NotificationWebSocketHandler;
+import com.petsave.petsave.Entity.Notification;
 import com.petsave.petsave.Entity.PaymentStatus;
-import com.petsave.petsave.Entity.PetSitting;
-import com.petsave.petsave.Entity.PetSittingPaymentStatus;
-import com.petsave.petsave.Entity.PetSittingStatus;
 import com.petsave.petsave.Repository.DonationRepository;
-import com.petsave.petsave.Repository.PetSittingRepository;
 import com.petsave.petsave.Service.EmailService;
+import com.petsave.petsave.Service.NotificationService;
+import com.petsave.petsave.Service.PetSittingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -30,19 +28,19 @@ public class PaystackWebhookController {
     private String paystackSecret;
 
     private final DonationRepository donationRepository;
-    private final PetSittingRepository petSittingRepository;
+    private final PetSittingService petSittingService;
     private final EmailService emailService;
-    private final NotificationWebSocketHandler webSocketHandler;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PaystackWebhookController(DonationRepository donationRepository,
-                                      PetSittingRepository petSittingRepository,
+                                      PetSittingService petSittingService,
                                       EmailService emailService,
-                                      NotificationWebSocketHandler webSocketHandler) {
+                                      NotificationService notificationService) {
         this.donationRepository = donationRepository;
-        this.petSittingRepository = petSittingRepository;
+        this.petSittingService = petSittingService;
         this.emailService = emailService;
-        this.webSocketHandler = webSocketHandler;
+        this.notificationService = notificationService;
     }
 
     @PostMapping("/webhook")
@@ -99,6 +97,12 @@ public class PaystackWebhookController {
             } catch (Exception e) {
                 log.error("Failed to send donation emails for reference {}: {}", reference, e.getMessage());
             }
+
+            if (donation.getUser() != null) {
+                notificationService.notify(donation.getUser().getEmail(), Notification.NotificationType.DONATION_SUCCESS,
+                        "Thank you! Your donation of " + amount + " was received.");
+            }
+
             return true;
         }).orElse(false);
 
@@ -108,40 +112,11 @@ public class PaystackWebhookController {
     }
 
     private void handlePetSittingSuccess(String reference) {
-        petSittingRepository.findByPaymentReference(reference).ifPresent(booking -> {
-            booking.setPaymentStatus(PetSittingPaymentStatus.PAID);
-            booking.setStatus(PetSittingStatus.CONFIRMED);
-            petSittingRepository.save(booking);
-            log.info("Pet sitting booking {} confirmed after payment, reference: {}", booking.getId(), reference);
-
-            notify(booking, "BOOKING_CONFIRMED", "Payment received — booking is confirmed.");
-        });
+        petSittingService.applyPaymentSuccessByReference(reference);
     }
 
     private void handlePetSittingFailure(String reference) {
-        petSittingRepository.findByPaymentReference(reference).ifPresent(booking -> {
-            booking.setPaymentStatus(PetSittingPaymentStatus.FAILED);
-            booking.setStatus(PetSittingStatus.CANCELLED);
-            petSittingRepository.save(booking);
-            log.info("Pet sitting booking {} cancelled after failed payment, reference: {}", booking.getId(), reference);
-
-            notify(booking, "BOOKING_PAYMENT_FAILED", "Payment failed — booking was cancelled.");
-        });
-    }
-
-    private void notify(PetSitting booking, String type, String message) {
-        try {
-            Map<String, Object> payload = Map.of(
-                    "type", type,
-                    "message", message,
-                    "bookingId", booking.getId(),
-                    "timestamp", System.currentTimeMillis()
-            );
-            webSocketHandler.sendToUser(booking.getOwner().getEmail(), payload);
-            webSocketHandler.sendToUser(booking.getSitter().getEmail(), payload);
-        } catch (Exception e) {
-            log.warn("Failed to send booking payment notification: {}", e.getMessage());
-        }
+        petSittingService.applyPaymentFailureByReference(reference);
     }
 
     private void handleFailure(String reference) {
@@ -149,6 +124,10 @@ public class PaystackWebhookController {
             donation.setPaymentStatus(PaymentStatus.FAILED);
             donationRepository.save(donation);
             log.info("Payment marked failed for reference: {}", reference);
+            if (donation.getUser() != null) {
+                notificationService.notify(donation.getUser().getEmail(), Notification.NotificationType.DONATION_FAILED,
+                        "Your donation payment could not be processed. Please try again.");
+            }
             return true;
         }).orElse(false);
 

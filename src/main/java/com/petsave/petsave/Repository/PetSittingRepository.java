@@ -26,4 +26,20 @@ public interface PetSittingRepository extends JpaRepository<PetSitting, Long> {
 
     @EntityGraph(attributePaths = {"owner", "sitter", "pet"})
     List<PetSitting> findByStatusInAndEndDateBefore(List<PetSittingStatus> statuses, LocalDateTime cutoff);
+
+    @Query("SELECT COUNT(b) FROM PetSitting b WHERE b.sitter.id = :sitterId AND b.status IN :statuses " +
+            "AND b.startDate < :endDate AND b.endDate > :startDate")
+    long countOverlappingBookings(@Param("sitterId") Long sitterId,
+                                   @Param("statuses") List<PetSittingStatus> statuses,
+                                   @Param("startDate") LocalDateTime startDate,
+                                   @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COUNT(b) FROM PetSitting b WHERE b.pet.id = :petId AND b.status IN :statuses " +
+            "AND b.startDate < :endDate AND b.endDate > :startDate")
+    long countOverlappingBookingsForPet(@Param("petId") Long petId,
+                                         @Param("statuses") List<PetSittingStatus> statuses,
+                                         @Param("startDate") LocalDateTime startDate,
+                                         @Param("endDate") LocalDateTime endDate);
+
+    boolean existsByPetId(Long petId);
 }

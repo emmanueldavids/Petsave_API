@@ -64,6 +64,12 @@ public class PetSitter {
     private String accountNumber;
     private String accountName;
 
+    // Paystack recipient type ("nuban" for Nigerian banks, "mobile_money" for Ghana MTN/Vodafone/AirtelTigo,
+    // etc.) and settlement currency ("NGN", "GHS", ...) — these vary by sitter's country, so they can't be
+    // hardcoded. Defaults preserve prior behavior for sitters who registered before this field existed.
+    private String recipientType = "nuban";
+    private String payoutCurrency = "NGN";
+
     @Column(name = "paystack_recipient_code")
     private String paystackRecipientCode;
 

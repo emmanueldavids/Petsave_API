@@ -34,9 +34,13 @@ public class AdoptionCheckInService {
     private final AdoptionRepository adoptionRepository;
     private final EmailUtil emailUtil;
     private final CloudinaryService cloudinaryService;
+    private final NotificationService notificationService;
 
     @Value("${app.upload.check-in-photos:}")
     private String uploadDir;
+
+    @Value("${app.admin.email:admin@petsave.com}")
+    private String adminEmail;
 
     // ================= CREATE CHECK-INS FOR NEW COMPLETED ADOPTIONS =================
     @Async
@@ -123,7 +127,7 @@ public class AdoptionCheckInService {
         );
 
         // Notify admin if health concerns
-        if (checkIn.getHealthStatus() == AdoptionCheckInHealthStatus.NEEDS_VET || 
+        if (checkIn.getHealthStatus() == AdoptionCheckInHealthStatus.NEEDS_VET ||
             checkIn.getHealthStatus() == AdoptionCheckInHealthStatus.CONCERNS) {
             emailUtil.sendAdminHealthConcernAlert(
                     checkIn.getAdoption().getPetName(),
@@ -131,6 +135,9 @@ public class AdoptionCheckInService {
                     checkIn.getHealthStatus().name(),
                     checkIn.getAdopterNotes()
             );
+            notificationService.notify(adminEmail, Notification.NotificationType.CHECKIN_HEALTH_CONCERN,
+                    "Health concern (" + checkIn.getHealthStatus().name() + ") reported for " + checkIn.getAdoption().getPetName()
+                            + " by " + checkIn.getAdoption().getAdopterName());
         }
 
         return mapToResponse(checkIn);
@@ -190,6 +197,10 @@ public class AdoptionCheckInService {
                     checkIn.getMilestone().name(),
                     checkIn.getDueDate()
             );
+            if (checkIn.getAdoption().getUser() != null) {
+                notificationService.notify(checkIn.getAdoption().getUser().getEmail(), Notification.NotificationType.CHECKIN_REMINDER,
+                        "A " + checkIn.getMilestone().name() + " check-in for " + checkIn.getAdoption().getPetName() + " is due soon");
+            }
             log.info("Sent reminder for check-in {} to {}", checkIn.getId(), checkIn.getAdoption().getAdopterEmail());
         }
     }
@@ -214,6 +225,9 @@ public class AdoptionCheckInService {
                     checkIn.getMilestone().name(),
                     checkIn.getDueDate()
             );
+            notificationService.notify(adminEmail, Notification.NotificationType.CHECKIN_OVERDUE,
+                    checkIn.getAdoption().getAdopterName() + " missed the " + checkIn.getMilestone().name()
+                            + " check-in for " + checkIn.getAdoption().getPetName());
             log.warn("Admin alert sent for overdue check-in {} (adoption {})", checkIn.getId(), checkIn.getAdoption().getId());
         }
     }

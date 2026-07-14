@@ -77,6 +77,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/sitters/my", "/api/sitters/admin").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/sitters", "/api/sitters/*").permitAll()
                 .requestMatchers("/api/sitters/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/lost-found/my").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/lost-found", "/api/lost-found/*").permitAll()
+                .requestMatchers("/api/lost-found/**").authenticated()
+                .requestMatchers("/api/foster/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

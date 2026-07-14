@@ -4,6 +4,7 @@ import com.petsave.petsave.Entity.OwnedPet;
 import com.petsave.petsave.Entity.SitterPetType;
 import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.OwnedPetRepository;
+import com.petsave.petsave.Repository.PetSittingRepository;
 import com.petsave.petsave.Repository.UserRepository;
 import com.petsave.petsave.dto.OwnedPetRequest;
 import com.petsave.petsave.dto.OwnedPetResponse;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class OwnedPetService {
 
     private final OwnedPetRepository ownedPetRepository;
+    private final PetSittingRepository petSittingRepository;
     private final UserRepository userRepository;
 
     public List<OwnedPetResponse> listMyPets() {
@@ -42,6 +44,36 @@ public class OwnedPetService {
 
         OwnedPet saved = ownedPetRepository.save(pet);
         return mapToResponse(saved);
+    }
+
+    public OwnedPetResponse updatePet(Long id, OwnedPetRequest request) {
+        User currentUser = getCurrentUser();
+        OwnedPet pet = ownedPetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pet not found with id: " + id));
+        if (!pet.getOwner().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("You can only update your own pet");
+        }
+
+        pet.setName(request.getName());
+        pet.setPetType(parseEnum(request.getPetType()));
+        pet.setBreed(request.getBreed());
+        pet.setNotes(request.getNotes());
+
+        OwnedPet saved = ownedPetRepository.save(pet);
+        return mapToResponse(saved);
+    }
+
+    public void deletePet(Long id) {
+        User currentUser = getCurrentUser();
+        OwnedPet pet = ownedPetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pet not found with id: " + id));
+        if (!pet.getOwner().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("You can only delete your own pet");
+        }
+        if (petSittingRepository.existsByPetId(pet.getId())) {
+            throw new RuntimeException("This pet has sitting bookings on record and cannot be deleted");
+        }
+        ownedPetRepository.delete(pet);
     }
 
     private SitterPetType parseEnum(String value) {

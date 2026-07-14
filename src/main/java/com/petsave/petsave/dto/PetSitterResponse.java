@@ -51,6 +51,8 @@ public class PetSitterResponse {
     private String bankCode;
     private String accountNumber;
     private String accountName;
+    private String recipientType;
+    private String payoutCurrency;
     private Boolean payoutDetailsOnFile;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

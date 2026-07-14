@@ -1,5 +1,6 @@
 package com.petsave.petsave.Service;
 
+import com.petsave.petsave.Entity.Notification;
 import com.petsave.petsave.Entity.Post;
 import com.petsave.petsave.Entity.PostComment;
 import com.petsave.petsave.Entity.PostLike;
@@ -41,6 +42,7 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final NotificationService notificationService;
 
     public PostResponse createPost(PostRequest request) {
         User author = getCurrentUser();
@@ -135,6 +137,11 @@ public class PostService {
             postLikeRepository.save(like);
             post.setLikesCount(post.getLikesCount() + 1);
             post = postRepository.save(post);
+
+            if (!post.getAuthor().getId().equals(currentUser.getId())) {
+                notificationService.notify(post.getAuthor().getEmail(), Notification.NotificationType.POST_LIKED,
+                        currentUser.getName() + " liked your post", currentUser.getEmail());
+            }
         }
         return mapToResponse(post, currentUser, false);
     }
@@ -160,8 +167,9 @@ public class PostService {
         comment.setPost(post);
         comment.setAuthor(currentUser);
         comment.setContent(request.getContent());
+        PostComment parent = null;
         if (request.getParentCommentId() != null) {
-            PostComment parent = postCommentRepository.findById(request.getParentCommentId())
+            parent = postCommentRepository.findById(request.getParentCommentId())
                     .orElseThrow(() -> new RuntimeException("Parent comment not found with id: " + request.getParentCommentId()));
             if (!parent.getPost().getId().equals(postId)) {
                 throw new RuntimeException("Parent comment does not belong to this post");
@@ -172,6 +180,16 @@ public class PostService {
 
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);
+
+        if (parent != null) {
+            if (!parent.getAuthor().getId().equals(currentUser.getId())) {
+                notificationService.notify(parent.getAuthor().getEmail(), Notification.NotificationType.COMMENT_REPLIED,
+                        currentUser.getName() + " replied to your comment", currentUser.getEmail());
+            }
+        } else if (!post.getAuthor().getId().equals(currentUser.getId())) {
+            notificationService.notify(post.getAuthor().getEmail(), Notification.NotificationType.POST_COMMENTED,
+                    currentUser.getName() + " commented on your post", currentUser.getEmail());
+        }
 
         return mapToCommentResponse(saved, currentUser, List.of());
     }

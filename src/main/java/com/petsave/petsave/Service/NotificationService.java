@@ -1,11 +1,13 @@
 package com.petsave.petsave.Service;
 
+import com.petsave.petsave.Config.NotificationWebSocketHandler;
 import com.petsave.petsave.Entity.Notification;
 import com.petsave.petsave.Repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +20,46 @@ import java.util.Map;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final NotificationWebSocketHandler webSocketHandler;
+
+    /**
+     * Single entry point for every domain event that should notify a user: persists a
+     * {@link Notification} row (so it survives the user being offline/reconnecting later)
+     * and, if they currently have a WebSocket connection open, pushes it live too.
+     */
+    public void notify(String userEmail, Notification.NotificationType type, String message) {
+        notify(userEmail, type, message, null);
+    }
+
+    public void notify(String userEmail, Notification.NotificationType type, String message, String senderEmail) {
+        if (userEmail == null || userEmail.isBlank()) {
+            return;
+        }
+        try {
+            Notification notification = Notification.builder()
+                    .userEmail(userEmail)
+                    .message(message)
+                    .type(type)
+                    .isRead(false)
+                    .senderEmail(senderEmail)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            notificationRepository.save(notification);
+        } catch (Exception e) {
+            log.error("Error persisting notification for {}: {}", userEmail, e.getMessage(), e);
+        }
+
+        try {
+            webSocketHandler.sendToUser(userEmail, Map.of(
+                    "type", type.name(),
+                    "message", message,
+                    "recipient", userEmail,
+                    "timestamp", System.currentTimeMillis()
+            ));
+        } catch (Exception e) {
+            log.warn("Failed to push live notification to {}: {}", userEmail, e.getMessage());
+        }
+    }
 
     /**
      * Send notification to specific user

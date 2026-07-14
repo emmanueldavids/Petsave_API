@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pet-sittings")
@@ -22,6 +23,27 @@ public class PetSittingController {
     @PostMapping("/book")
     public ResponseEntity<PetSittingResponse> bookSitting(@Valid @RequestBody BookSittingRequest request) {
         return ResponseEntity.ok(petSittingService.bookSitting(request));
+    }
+
+    @PatchMapping("/{id}/accept")
+    public ResponseEntity<PetSittingResponse> acceptBooking(@PathVariable Long id) {
+        return ResponseEntity.ok(petSittingService.acceptBooking(id));
+    }
+
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<PetSittingResponse> rejectBooking(@PathVariable Long id) {
+        return ResponseEntity.ok(petSittingService.rejectBooking(id));
+    }
+
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<PetSittingResponse> payForBooking(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        String callbackUrl = body != null ? body.get("callbackUrl") : null;
+        return ResponseEntity.ok(petSittingService.payForBooking(id, callbackUrl));
+    }
+
+    @PostMapping("/{id}/verify-payment")
+    public ResponseEntity<PetSittingResponse> verifyPayment(@PathVariable Long id) {
+        return ResponseEntity.ok(petSittingService.verifyPayment(id));
     }
 
     @GetMapping
@@ -45,12 +67,32 @@ public class PetSittingController {
     }
 
     @PatchMapping("/{id}/complete")
-    public ResponseEntity<PetSittingResponse> adminCompleteBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(petSittingService.adminCompleteBooking(id));
+    public ResponseEntity<PetSittingResponse> completeBooking(@PathVariable Long id) {
+        return ResponseEntity.ok(petSittingService.completeBooking(id));
+    }
+
+    @PostMapping("/{id}/retry-payout")
+    public ResponseEntity<PetSittingResponse> retryPayout(@PathVariable Long id) {
+        return ResponseEntity.ok(petSittingService.retryPayout(id));
     }
 
     @PostMapping("/{id}/review")
     public ResponseEntity<PetSittingReviewResponse> leaveReview(@PathVariable Long id, @Valid @RequestBody PetSittingReviewRequest request) {
         return ResponseEntity.ok(petSittingService.leaveReview(id, request));
+    }
+
+    @PatchMapping("/{id}/notes")
+    public ResponseEntity<PetSittingResponse> updateNotes(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(petSittingService.updateNotes(id, body.get("notes")));
+    }
+
+    @PatchMapping("/{id}/dispute")
+    public ResponseEntity<PetSittingResponse> raiseDispute(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(petSittingService.raiseDispute(id, body.get("reason")));
+    }
+
+    @PatchMapping("/{id}/resolve-dispute")
+    public ResponseEntity<PetSittingResponse> resolveDispute(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(petSittingService.resolveDispute(id, body.get("resolution")));
     }
 }
