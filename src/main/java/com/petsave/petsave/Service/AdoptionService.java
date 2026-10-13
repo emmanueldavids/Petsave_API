@@ -2,6 +2,7 @@ package com.petsave.petsave.Service;
 
 import com.petsave.petsave.Entity.Adoption;
 import com.petsave.petsave.Entity.AdoptionStatus;
+import com.petsave.petsave.Entity.Notification;
 import com.petsave.petsave.Entity.Pet;
 import com.petsave.petsave.Entity.PetStatus;
 import com.petsave.petsave.Entity.PetType;
@@ -10,6 +11,7 @@ import com.petsave.petsave.Repository.AdoptionRepository;
 import com.petsave.petsave.Repository.PetRepository;
 import com.petsave.petsave.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,7 +29,11 @@ public class AdoptionService {
     private final UserRepository userRepository;
     private final PetRepository petRepository;
     private final AdoptionEmailService adoptionEmailService;
+    private final NotificationService notificationService;
     private final com.petsave.petsave.Service.AdoptionCheckInService checkInService;
+
+    @Value("${app.admin.email:admin@petsave.com}")
+    private String adminEmail;
 
     public Adoption createAdoption(Adoption adoption, Long userId) {
         User user = userRepository.findById(userId)
@@ -51,8 +57,15 @@ public class AdoptionService {
                 // Log error but don't fail the adoption creation
                 System.err.println("Error sending adoption emails: " + e.getMessage());
             }
+
+            if (adoption.getUser() != null) {
+                notificationService.notify(adoption.getUser().getEmail(), Notification.NotificationType.ADOPTION_SUBMITTED,
+                        "Your adoption application for " + adoption.getPetName() + " has been submitted");
+            }
+            notificationService.notify(adminEmail, Notification.NotificationType.ADOPTION_SUBMITTED,
+                    "New adoption application for " + adoption.getPetName() + " from " + adoption.getAdopterName());
         }
-        
+
         return adoptionRepository.save(adoption);
     }
 
@@ -144,6 +157,27 @@ public class AdoptionService {
             } catch (Exception e) {
                 // Log error but don't fail the status update
                 System.err.println("Error sending adoption status emails: " + e.getMessage());
+            }
+
+            try {
+                if (adoption.getUser() != null) {
+                    switch (status) {
+                        case APPROVED -> notificationService.notify(adoption.getUser().getEmail(), Notification.NotificationType.ADOPTION_APPROVED,
+                                "Your adoption application for " + adoption.getPetName() + " was approved!");
+                        case REJECTED -> notificationService.notify(adoption.getUser().getEmail(), Notification.NotificationType.ADOPTION_REJECTED,
+                                "Your adoption application for " + adoption.getPetName() + " was not approved this time.");
+                        case COMPLETED -> notificationService.notify(adoption.getUser().getEmail(), Notification.NotificationType.ADOPTION_COMPLETED,
+                                "Congratulations! Your adoption of " + adoption.getPetName() + " is now complete.");
+                        default -> {
+                        }
+                    }
+                }
+                if (status == AdoptionStatus.APPROVED || status == AdoptionStatus.REJECTED || status == AdoptionStatus.COMPLETED) {
+                    notificationService.notify(adminEmail, Notification.NotificationType.valueOf("ADOPTION_" + status.name()),
+                            "Adoption application for " + adoption.getPetName() + " is now " + status.name());
+                }
+            } catch (Exception e) {
+                System.err.println("Error persisting adoption status notification: " + e.getMessage());
             }
         }
         

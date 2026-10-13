@@ -1,5 +1,6 @@
 package com.petsave.petsave.Service;
 
+import com.petsave.petsave.Entity.Notification;
 import com.petsave.petsave.Entity.PetSitter;
 import com.petsave.petsave.Entity.PetSitterStatus;
 import com.petsave.petsave.Entity.PetSittingReview;
@@ -33,6 +34,7 @@ public class PetSitterService {
     private final SitterWalletRepository sitterWalletRepository;
     private final PetSittingReviewRepository petSittingReviewRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public List<PetSitterResponse> listActiveSitters(String city) {
         List<PetSitter> sitters = (city == null || city.isBlank())
@@ -103,6 +105,10 @@ public class PetSitterService {
         PetSitterStatus status = parseEnum(PetSitterStatus.class, statusParam, "status");
         sitter.setStatus(status);
         PetSitter saved = petSitterRepository.save(sitter);
+
+        notificationService.notify(sitter.getUser().getEmail(), Notification.NotificationType.SITTER_STATUS_UPDATE,
+                "Your pet sitter application status is now: " + status.name());
+
         return mapToResponse(saved, true);
     }
 
@@ -157,6 +163,10 @@ public class PetSitterService {
         sitter.setBankCode(request.getBankCode());
         sitter.setAccountNumber(request.getAccountNumber());
         sitter.setAccountName(request.getAccountName());
+        sitter.setRecipientType(request.getRecipientType() != null && !request.getRecipientType().isBlank()
+                ? request.getRecipientType() : "nuban");
+        sitter.setPayoutCurrency(request.getPayoutCurrency() != null && !request.getPayoutCurrency().isBlank()
+                ? request.getPayoutCurrency() : "NGN");
     }
 
     private <E extends Enum<E>> E parseEnum(Class<E> enumType, String value, String fieldName) {
@@ -190,6 +200,8 @@ public class PetSitterService {
                 .bankCode(includePrivateFields ? sitter.getBankCode() : null)
                 .accountNumber(includePrivateFields ? sitter.getAccountNumber() : null)
                 .accountName(includePrivateFields ? sitter.getAccountName() : null)
+                .recipientType(includePrivateFields ? sitter.getRecipientType() : null)
+                .payoutCurrency(includePrivateFields ? sitter.getPayoutCurrency() : null)
                 .payoutDetailsOnFile(includePrivateFields ? (sitter.getBankCode() != null && sitter.getAccountNumber() != null) : null)
                 .createdAt(sitter.getCreatedAt())
                 .updatedAt(sitter.getUpdatedAt())

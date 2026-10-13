@@ -44,4 +44,10 @@ public class PetSitterRequest {
     private String accountNumber;
 
     private String accountName;
+
+    // "nuban" (Nigerian bank) or "mobile_money" (Ghana MTN/Vodafone/AirtelTigo etc). Defaults to "nuban".
+    private String recipientType;
+
+    // Settlement currency for the payout, e.g. "NGN", "GHS". Defaults to "NGN".
+    private String payoutCurrency;
 }

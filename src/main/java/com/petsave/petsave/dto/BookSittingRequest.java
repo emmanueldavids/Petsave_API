@@ -27,6 +27,4 @@ public class BookSittingRequest {
     private LocalDateTime endDate;
 
     private String ownerNotes;
-
-    private String callbackUrl;
 }

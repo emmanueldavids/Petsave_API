@@ -3,6 +3,7 @@ package com.petsave.petsave.Service;
 import com.petsave.petsave.Config.NotificationWebSocketHandler;
 import com.petsave.petsave.Entity.ChatConversation;
 import com.petsave.petsave.Entity.ChatMessage;
+import com.petsave.petsave.Entity.Notification;
 import com.petsave.petsave.Entity.User;
 import com.petsave.petsave.Repository.ChatConversationRepository;
 import com.petsave.petsave.Repository.ChatMessageRepository;
@@ -32,6 +33,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final NotificationWebSocketHandler webSocketHandler;
+    private final NotificationService notificationService;
 
     public List<ChatResponse> listMyConversations() {
         User currentUser = getCurrentUser();
@@ -94,6 +96,10 @@ public class ChatService {
                 "content", content,
                 "timestamp", saved.getCreatedAt().toString()
         ));
+
+        String preview = content.length() > 100 ? content.substring(0, 100) : content;
+        notificationService.notify(otherUser.getEmail(), Notification.NotificationType.CHAT_MESSAGE,
+                currentUser.getName() + ": " + preview, currentUser.getEmail());
 
         return response;
     }

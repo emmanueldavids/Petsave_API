@@ -29,6 +29,7 @@ public class VolunteerService {
     private final VolunteerTaskRepository volunteerTaskRepository;
     private final PetRepository petRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public List<VolunteerResponse> listApprovedVolunteers() {
         return volunteerRepository.findByStatusIn(PUBLIC_STATUSES).stream()
@@ -102,6 +103,10 @@ public class VolunteerService {
         VolunteerStatus status = parseEnum(VolunteerStatus.class, statusParam, "status");
         volunteer.setStatus(status);
         Volunteer saved = volunteerRepository.save(volunteer);
+
+        notificationService.notify(volunteer.getUser().getEmail(), Notification.NotificationType.VOLUNTEER_STATUS_UPDATE,
+                "Your volunteer status is now: " + status.name());
+
         return mapToResponse(saved, true);
     }
 
@@ -158,6 +163,10 @@ public class VolunteerService {
         }
 
         VolunteerTask saved = volunteerTaskRepository.save(task);
+
+        notificationService.notify(volunteer.getUser().getEmail(), Notification.NotificationType.VOLUNTEER_TASK_ASSIGNED,
+                "You've been assigned a new task: " + task.getTitle());
+
         return mapToTaskResponse(saved);
     }
 

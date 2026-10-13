@@ -33,7 +33,23 @@
       "Bash(tail -40 /tmp/petsave-run7.log | grep -A 30 \"Unhandled exception\")",
       "Bash(grep -n \"ERROR\" /tmp/petsave-run7.log | tail -10)",
       "Bash(grep -n \"Unhandled exception\" /tmp/petsave-run7.log | tail -3)",
-      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\([\\(b['id'],b['status'],b['paymentStatus']\\) for b in d]\\)\")"
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\([\\(b['id'],b['status'],b['paymentStatus']\\) for b in d]\\)\")",
+      "Bash(grep -n \"admin-only\\\\|force-complete\\\\|ADMIN-only\\\\|Admin-only\\\\|/complete\\\\`\\\\|COMPLETED\\\\*\\\\*\" /Users/emmanueldavids/Documents/pp/Petsave_API/PET_SITTING_FRONTEND_DOCS.md)",
+      "Bash(curl -sS -o /dev/null -w \"sitters: %{http_code}\\\\n\" http://localhost:8080/api/sitters)",
+      "Bash(curl -sS -o /dev/null -w \"pet-sittings \\(unauth, expect 403\\): %{http_code}\\\\n\" http://localhost:8080/api/pet-sittings)",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('status:',d['status'],'paymentStatus:',d['paymentStatus']\\)\")",
+      "Bash(env)",
+      "Bash(grep -iE \"The following.*profile|Hibernate:\" /tmp/petsave-run14.log | head -10)",
+      "Bash(curl -sS -o /dev/null -w \"donations: %{http_code}\\\\n\" http://localhost:8080/api/donations)",
+      "Bash(grep -n \"PATCH /api/pet-sittings/{id}/confirm.*sitter only, only from\" /Users/emmanueldavids/Documents/pp/Petsave_API/PET_SITTING_FRONTEND_DOCS.md)",
+      "Bash(curl -sS -o /dev/null -w \"server up: %{http_code}\\\\n\" http://localhost:8080/api/posts)",
+      "Bash(tail -100 /tmp/petsave-run15.log | grep -B2 -A 15 \"Paystack verify\")",
+      "Bash(disown)",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@petsave.com\",\"password\":\"Admin@123\"}')",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('token'\\) or d\\)\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"adminuser\"}')",
+      "Bash(grep -i \"paystack verify\\\\|connection reset\" /tmp/petsave-run16.log | tail -10)",
+      "Bash(grep -i \"payout could not be released\\\\|recipient\\\\|transfer\" /tmp/petsave-run16.log | tail -30)"
     ]
   }
 }

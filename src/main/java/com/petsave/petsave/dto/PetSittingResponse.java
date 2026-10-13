@@ -43,6 +43,8 @@ public class PetSittingResponse {
 
     private String sitterNotes;
 
+    private String disputeReason;
+
     // Only populated when creating a booking (payment needs to be completed)
     private String paymentAuthorizationUrl;
 
