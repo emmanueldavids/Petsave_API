@@ -55,9 +55,6 @@ public class PetSitting {
     @Column(length = 2000)
     private String sitterNotes;
 
-    @Column(length = 2000)
-    private String disputeReason;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

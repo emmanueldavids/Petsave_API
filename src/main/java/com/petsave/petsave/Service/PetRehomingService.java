@@ -21,7 +21,6 @@ public class PetRehomingService {
     private final PetRehomingRepository petRehomingRepository;
     private final RehomingApplicationRepository rehomingApplicationRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
 
     public PetRehoming createRehoming(PetRehoming rehoming) {
         User owner = getCurrentUser();
@@ -131,12 +130,7 @@ public class PetRehomingService {
         application.setRehoming(rehoming);
         application.setApplicant(applicant);
         application.setStatus(RehomingApplicationStatus.PENDING);
-        RehomingApplication saved = rehomingApplicationRepository.save(application);
-
-        notificationService.notify(rehoming.getOwner().getEmail(), Notification.NotificationType.REHOMING_APPLICATION_RECEIVED,
-                applicant.getName() + " applied to adopt " + rehoming.getPetName());
-
-        return saved;
+        return rehomingApplicationRepository.save(application);
     }
 
     public List<RehomingApplication> listApplications(Long rehomingId) {
@@ -169,16 +163,11 @@ public class PetRehomingService {
         petRehomingRepository.save(rehoming);
         RehomingApplication saved = rehomingApplicationRepository.save(application);
 
-        notificationService.notify(application.getApplicant().getEmail(), Notification.NotificationType.REHOMING_APPLICATION_APPROVED,
-                "Your application to adopt " + rehoming.getPetName() + " was approved!");
-
         List<RehomingApplication> otherApplications = rehomingApplicationRepository.findByRehomingOrderByCreatedAtDesc(rehoming);
         for (RehomingApplication other : otherApplications) {
             if (!other.getId().equals(saved.getId()) && other.getStatus() == RehomingApplicationStatus.PENDING) {
                 other.setStatus(RehomingApplicationStatus.REJECTED);
                 rehomingApplicationRepository.save(other);
-                notificationService.notify(other.getApplicant().getEmail(), Notification.NotificationType.REHOMING_APPLICATION_REJECTED,
-                        "Another applicant was chosen for " + rehoming.getPetName());
             }
         }
 
