@@ -24,6 +24,7 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
     private final UserDetailsService userDetailsService;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public AuthenticationManager authenticationManager() {
@@ -38,6 +39,11 @@ public class SecurityConfig {
         http
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; frame-ancestors 'none'; object-src 'none'"))
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).preload(true).maxAgeInSeconds(31536000))
+            )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
@@ -83,6 +89,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/foster/**").authenticated()
                 .anyRequest().authenticated()
             )
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

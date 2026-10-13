@@ -115,18 +115,27 @@ public class AuthService {
 
     // ================= LOGIN =================
     public LoginResponse login(LoginRequest request) {
+        String normalizedEmail = Optional.ofNullable(request.getEmail())
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .orElseGet(() -> Optional.ofNullable(request.getUsername())
+                        .map(String::trim)
+                        .filter(value -> !value.isEmpty())
+                        .orElse(null));
 
-        // Try to find user by username first, then by email
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseGet(() -> userRepository.findByEmail(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found. Please check your username or email.")));
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            throw new RuntimeException("Email is required.");
+        }
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new RuntimeException("User not found. Please check your email."));
 
         if (!user.isVerified()) {
             throw new RuntimeException("Please verify your email address before logging in. Check your inbox for the verification code.");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid username or password. Please try again.");
+            throw new RuntimeException("Invalid email or password. Please try again.");
         }
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail());

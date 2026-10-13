@@ -1,10 +1,14 @@
 package com.petsave.petsave.Service;
 
+import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -19,10 +23,17 @@ import java.util.Map;
 public class AsyncEmailService {
 
     private final TemplateEngine templateEngine;
+    private final JavaMailSender mailSender;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${brevo.api.key:}")
     private String brevoApiKey;
+
+    @Value("${spring.profiles.active:local}")
+    private String activeProfiles;
+
+    @Value("${spring.mail.username:}")
+    private String smtpUsername;
 
     @Value("${brevo.from.email:noreply@petsave.com}")
     private String fromEmail;
@@ -33,12 +44,25 @@ public class AsyncEmailService {
     @Value("${app.frontend.url:https://petsave-frontend.vercel.app}")
     private String frontendUrl;
 
-    public AsyncEmailService(TemplateEngine templateEngine) {
+    public AsyncEmailService(TemplateEngine templateEngine, JavaMailSender mailSender) {
         this.templateEngine = templateEngine;
+        this.mailSender = mailSender;
+    }
+
+    boolean shouldUseSmtp() {
+        String normalizedProfiles = activeProfiles == null ? "" : activeProfiles.toLowerCase();
+        boolean localMode = normalizedProfiles.contains("local") || normalizedProfiles.contains("dev") || normalizedProfiles.contains("development");
+        boolean smtpConfigured = StringUtils.hasText(smtpUsername);
+        return localMode || (!StringUtils.hasText(brevoApiKey) && smtpConfigured);
     }
 
     private void send(String to, String subject, String html) {
         try {
+            if (shouldUseSmtp()) {
+                sendViaSmtp(to, subject, html);
+                return;
+            }
+
             HttpHeaders headers = new HttpHeaders();
             headers.set("api-key", brevoApiKey);
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -58,6 +82,25 @@ public class AsyncEmailService {
             log.info("Email sent to {} via Brevo: {}", to, subject);
         } catch (Exception e) {
             log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
+        }
+    }
+
+    private void sendViaSmtp(String to, String subject, String html) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            String sender = StringUtils.hasText(smtpUsername) ? smtpUsername : fromEmail;
+            helper.setFrom(sender, fromName);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Email sent to {} via SMTP: {}", to, subject);
+        } catch (Exception e) {
+            log.error("Failed to send email to {} via SMTP: {}", to, e.getMessage(), e);
+            throw new RuntimeException("SMTP email delivery failed", e);
         }
     }
 
